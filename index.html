@@ -55,43 +55,29 @@ tailwind.config = {
   .glass-card { background:rgba(22,22,24,0.8); backdrop-filter:blur(12px); border:1px solid #2C2C2E; }
   .cell-card { background:rgba(22,22,24,0.9); border:1px solid #2C2C2E; }
   .glow-secondary { box-shadow:0 0 20px var(--secondary-glow); }
-  .glow-primary { box-shadow:0 0 20px var(--primary-glow); }
   @keyframes pulse-slow { 0%,100%{opacity:1} 50%{opacity:0.7} }
   .animate-pulse-slow { animation:pulse-slow 3s infinite ease-in-out; }
   @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
   .page-transition { animation:fadeIn 0.25s ease-out; }
   @keyframes shimmer { 0%{background-position:-200px 0} 100%{background-position:200px 0} }
   .shimmer { background:linear-gradient(90deg,#42e355 0%,#70ff76 50%,#42e355 100%); background-size:400px 100%; animation:shimmer 2s infinite; }
-  /* Chart */
-  @keyframes drawLine { from{stroke-dashoffset:1000} to{stroke-dashoffset:0} }
-  @keyframes fillArea { from{opacity:0} to{opacity:0.15} }
-  .spark-line { fill:none; stroke:#adc6ff; stroke-width:2; stroke-dasharray:1000; animation:drawLine 2s ease-out forwards; }
-  .spark-area { fill:url(#gradient); animation:fillArea 2s ease-out forwards; }
-  @keyframes pulse-point { 0%,100%{r:5;opacity:1} 50%{r:8;opacity:0.6} }
-  .pulsing-point circle { animation:pulse-point 2s infinite ease-in-out; }
-  /* Slide up items */
-  @keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-  .slide-up-item { animation:slideUp 0.4s ease-out both; }
-  /* SOC circle */
-  .soc-ring { stroke-dasharray:440; transition:stroke-dashoffset 1.5s cubic-bezier(0.4,0,0.2,1); }
-  /* BT scanning pulse */
+  .soc-ring { stroke-dasharray:628; transition:stroke-dashoffset 1.5s cubic-bezier(0.4,0,0.2,1); }
   @keyframes ping { 0%{transform:scale(1);opacity:0.8} 100%{transform:scale(2);opacity:0} }
   .bt-ping { animation:ping 1.5s cubic-bezier(0,0,0.2,1) infinite; }
-  /* Screen transitions */
   .screen { display:none; }
   .screen.active { display:block; animation:fadeIn 0.25s ease-out; }
-  /* Safe area padding for iOS */
   .pb-safe { padding-bottom:env(safe-area-inset-bottom, 16px); }
+  .bat-tab { padding:4px 12px; border-radius:20px; font-size:11px; font-weight:700; letter-spacing:.05em; border:1px solid #414755; color:#c1c6d7; background:#1f1f21; cursor:pointer; white-space:nowrap; transition:all .15s; }
+  .bat-tab.active { background:#42e355; color:#00390a; border-color:#42e355; }
+  .bat-tab.serie { background:#ffb868; color:#482900; border-color:#ffb868; }
+  input[type=range] { accent-color:#42e355; }
 </style>
 </head>
 <body class="bg-background text-on-background font-body-md antialiased">
 
-<!-- ═══════════════════════════════════════════
-     CONNECT SCREEN
-═══════════════════════════════════════════ -->
+<!-- CONNECT SCREEN -->
 <div id="app-connect" class="min-h-screen flex flex-col">
   <div class="flex-1 flex flex-col items-center justify-center px-8 py-16 text-center">
-    <!-- Icon -->
     <div class="relative mb-8">
       <div class="w-24 h-24 rounded-3xl bg-surface-container flex items-center justify-center">
         <span class="material-symbols-outlined text-secondary" style="font-size:48px;font-variation-settings:'FILL' 1;">battery_charging_full</span>
@@ -101,50 +87,35 @@ tailwind.config = {
       </div>
     </div>
     <h1 class="font-headline-lg text-headline-lg text-on-surface mb-2">MUST Monitor</h1>
-    <p class="font-body-md text-body-md text-on-surface-variant mb-12">Conecta tu batería LiFePO4 vía Bluetooth para ver el estado en tiempo real.</p>
-
-    <!-- Connect button -->
-    <button id="btn-connect-bt" onclick="connectBluetooth()"
-      class="w-full h-14 bg-secondary text-on-secondary font-headline-md text-headline-md rounded-xl active:scale-95 transition-all duration-200 flex items-center justify-center gap-3 shadow-lg shadow-secondary/20 glow-secondary mb-4">
+    <p class="font-body-md text-body-md text-on-surface-variant mb-12">Conecta tus baterías LiFePO4 vía Bluetooth.</p>
+    <button onclick="connectBluetooth()"
+      class="w-full h-14 bg-secondary text-on-secondary font-headline-md text-headline-md rounded-xl active:scale-95 transition-all duration-200 flex items-center justify-center gap-3 shadow-lg shadow-secondary/20 mb-4">
       <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">bluetooth_searching</span>
-      Conectar por Bluetooth
+      Conectar batería
     </button>
-
-    <!-- QR button -->
     <button onclick="startQrScan()"
       class="w-full h-14 bg-surface-container text-on-surface font-headline-md text-headline-md rounded-xl active:scale-95 transition-all duration-200 flex items-center justify-center gap-3 border border-outline-variant mb-8">
       <span class="material-symbols-outlined">qr_code_scanner</span>
       Escanear código QR
     </button>
-
-    <!-- Demo mode -->
-    <button onclick="startDemo()"
-      class="text-on-surface-variant font-label-caps text-label-caps underline underline-offset-2">
+    <button onclick="startDemo()" class="text-on-surface-variant font-label-caps text-label-caps underline underline-offset-2">
       Continuar en modo demo
     </button>
   </div>
-
-  <!-- Status message -->
   <div id="connect-status" class="hidden px-6 pb-8">
     <div class="glass-card rounded-xl p-4 flex items-center gap-3">
       <div class="relative flex-shrink-0">
         <div class="w-3 h-3 rounded-full bg-primary bt-ping absolute inset-0"></div>
         <div class="w-3 h-3 rounded-full bg-primary relative"></div>
       </div>
-      <span id="connect-msg" class="font-body-md text-body-md text-on-surface">Buscando dispositivos…</span>
+      <span id="connect-msg" class="font-body-md text-body-md text-on-surface">Buscando…</span>
     </div>
   </div>
-
-  <!-- QR Scanner overlay -->
   <div id="qr-overlay" class="hidden fixed inset-0 bg-black/90 z-50 flex flex-col items-center justify-center p-8">
     <div class="w-full max-w-sm">
-      <div class="relative bg-surface-container rounded-2xl overflow-hidden aspect-square mb-6 flex items-center justify-center border-2 border-secondary/30">
+      <div class="relative bg-surface-container rounded-2xl overflow-hidden aspect-square mb-6 border-2 border-secondary/30">
         <video id="qr-video" class="w-full h-full object-cover" playsinline></video>
-        <!-- Scan frame -->
         <div class="absolute inset-8 border-2 border-secondary rounded-xl opacity-70 pointer-events-none"></div>
-        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div class="w-2/3 h-0.5 bg-secondary/60 animate-pulse-slow"></div>
-        </div>
       </div>
       <p class="text-center font-body-md text-on-surface-variant mb-6">Apunta al código QR de la batería</p>
       <button onclick="stopQrScan()" class="w-full h-12 bg-surface-container-high rounded-xl font-headline-md text-on-surface-variant">Cancelar</button>
@@ -152,30 +123,31 @@ tailwind.config = {
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════
-     MAIN APP
-═══════════════════════════════════════════ -->
+<!-- MAIN APP -->
 <div id="app-main" class="hidden min-h-screen flex flex-col">
-
-  <!-- App Bar -->
-  <header class="w-full sticky top-0 bg-surface-dim border-b border-surface-variant flex justify-between items-center px-container-padding h-14 z-40">
-    <div class="flex items-center gap-2">
-      <span class="material-symbols-outlined text-primary" style="font-variation-settings:'FILL' 1;">battery_charging_full</span>
-      <h1 id="device-name" class="font-headline-md text-headline-md text-primary">MUST 12V 100Ah</h1>
+  <header class="w-full sticky top-0 bg-surface-dim border-b border-surface-variant z-40">
+    <div class="flex justify-between items-center px-container-padding h-14">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary" style="font-variation-settings:'FILL' 1;">battery_charging_full</span>
+        <h1 id="device-name" class="font-headline-md text-headline-md text-primary">MUST 12V 100Ah</h1>
+      </div>
+      <div class="flex items-center gap-3">
+        <span id="demo-badge" class="hidden font-label-caps text-label-caps bg-tertiary-container text-on-tertiary px-2 py-0.5 rounded-full">DEMO</span>
+        <button onclick="addBattery()" title="Agregar otra batería"
+          class="flex items-center gap-1 px-2 py-1 bg-surface-container rounded-lg active:scale-95 transition-transform">
+          <span class="material-symbols-outlined text-secondary text-[18px]">add</span>
+          <span class="font-label-caps text-label-caps text-secondary" style="font-size:10px;">BAT</span>
+        </button>
+        <span class="material-symbols-outlined text-secondary cursor-pointer" onclick="disconnectDevice()" style="font-variation-settings:'FILL' 1;">bluetooth_connected</span>
+      </div>
     </div>
-    <div class="flex items-center gap-4">
-      <span id="bt-icon" class="material-symbols-outlined text-secondary cursor-pointer" onclick="disconnectDevice()" style="font-variation-settings:'FILL' 1;" title="Conectado — toca para desconectar">bluetooth_connected</span>
-      <span id="demo-badge" class="hidden font-label-caps text-label-caps bg-tertiary-container text-on-tertiary px-2 py-0.5 rounded-full">DEMO</span>
-      <span class="material-symbols-outlined text-on-surface-variant">notifications</span>
-    </div>
+    <div id="bat-tabs" class="hidden gap-2 px-container-padding pb-2 overflow-x-auto" style="display:none;"></div>
   </header>
 
-  <!-- Screens container -->
   <main class="flex-1 pb-24">
 
-    <!-- ── DASHBOARD ── -->
+    <!-- DASHBOARD -->
     <section id="screen-dashboard" class="screen active">
-      <!-- Hero SoC -->
       <div class="flex flex-col items-center justify-center pt-8 pb-8 relative">
         <div class="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none">
           <div class="w-64 h-64 bg-primary rounded-full blur-[100px]"></div>
@@ -183,8 +155,8 @@ tailwind.config = {
         <div class="relative w-56 h-56">
           <svg class="w-full h-full" viewBox="0 0 256 256">
             <circle class="text-surface-container-highest" cx="128" cy="128" r="100" fill="transparent" stroke="currentColor" stroke-width="14"/>
-            <circle id="soc-ring" class="text-secondary soc-ring" cx="128" cy="128" r="100" fill="transparent" stroke="currentColor" stroke-width="14" stroke-linecap="round"
-              style="transform:rotate(-90deg);transform-origin:128px 128px;stroke-dashoffset:calc(628 - (628 * 85) / 100);stroke-dasharray:628"/>
+            <circle id="soc-ring" class="soc-ring" cx="128" cy="128" r="100" fill="transparent" stroke="#42e355" stroke-width="14" stroke-linecap="round"
+              style="transform:rotate(-90deg);transform-origin:128px 128px;stroke-dashoffset:84"/>
           </svg>
           <div class="absolute inset-0 flex flex-col items-center justify-center">
             <span id="soc-value" class="font-display-data text-display-data text-on-surface">85<span class="text-headline-md font-headline-md text-on-surface-variant">%</span></span>
@@ -196,14 +168,11 @@ tailwind.config = {
             <div class="w-2 h-2 rounded-full bg-secondary animate-pulse"></div>
             <span id="system-status" class="font-label-caps text-label-caps text-secondary">SISTEMA OK</span>
           </div>
-          <div id="eco-badge" class="flex items-center gap-2 px-4 py-2 bg-primary-container/10 border border-primary/20 rounded-full">
-            <span class="material-symbols-outlined text-primary text-[16px]">bolt</span>
-            <span class="font-label-caps text-label-caps text-primary">MODO ECO</span>
+          <div id="serie-badge" class="hidden items-center gap-2 px-4 py-2 bg-tertiary-container/20 border border-tertiary/20 rounded-full">
+            <span class="font-label-caps text-label-caps text-tertiary">SERIE 24V</span>
           </div>
         </div>
       </div>
-
-      <!-- Metrics grid -->
       <div class="px-container-padding grid grid-cols-2 gap-card-gap">
         <div class="glass-card rounded-xl p-4 flex flex-col gap-2 transition-transform active:scale-[0.98]">
           <div class="flex justify-between items-start">
@@ -224,10 +193,9 @@ tailwind.config = {
             <span class="material-symbols-outlined text-on-surface-variant text-[18px]">schedule</span>
           </div>
           <div class="flex items-baseline gap-1 mt-2">
-            <span id="autonomia-value" class="font-display-data text-[28px] leading-none text-on-surface">08:45</span>
+            <span id="autonomia-value" class="font-display-data text-[28px] leading-none text-on-surface">—</span>
             <span class="font-headline-md text-[16px] text-on-surface-variant">H</span>
           </div>
-          <p id="carga-eta" class="font-label-caps text-label-caps text-on-surface-variant/60 mt-1">Carga al 100% en 2h</p>
         </div>
         <div class="glass-card rounded-xl p-4 flex flex-col gap-2 col-span-2 relative overflow-hidden transition-transform active:scale-[0.99]">
           <div class="relative z-10">
@@ -237,60 +205,53 @@ tailwind.config = {
             </div>
             <div class="flex items-center justify-between mt-2">
               <div class="flex items-baseline gap-1">
-                <span id="health-value" class="font-display-data text-[32px] leading-none text-on-surface">98.4</span>
+                <span id="health-value" class="font-display-data text-[32px] leading-none text-on-surface">98</span>
                 <span class="font-headline-md text-[18px] text-on-surface-variant">%</span>
               </div>
               <div id="health-badge" class="px-3 py-1 bg-secondary-container text-on-secondary-container font-label-caps text-label-caps rounded-lg">EXCELENTE</div>
             </div>
           </div>
-          <div class="absolute bottom-0 left-0 w-full h-12 opacity-20 pointer-events-none">
-            <svg class="w-full h-full" viewBox="0 0 400 100" preserveAspectRatio="none">
-              <path d="M0,80 Q50,70 100,75 T200,60 T300,65 T400,50 L400,100 L0,100 Z" fill="#42e355"/>
-            </svg>
-          </div>
         </div>
       </div>
-
-      <!-- Quick info -->
       <section class="px-container-padding mt-6 space-y-2">
-        <div class="flex justify-between items-center py-3 border-b border-surface-variant/50 px-2 rounded-lg">
+        <div class="flex justify-between items-center py-3 border-b border-surface-variant/50 px-2">
           <div class="flex items-center gap-3">
             <span class="material-symbols-outlined text-on-surface-variant">thermostat</span>
             <span class="text-on-surface font-body-lg">Temperatura</span>
           </div>
-          <span id="temp-value" class="font-mono-data text-mono-data text-on-surface">24.5°C</span>
+          <span id="temp-value" class="font-mono-data text-mono-data text-on-surface">—</span>
         </div>
-        <div class="flex justify-between items-center py-3 border-b border-surface-variant/50 px-2 rounded-lg">
+        <div class="flex justify-between items-center py-3 border-b border-surface-variant/50 px-2">
           <div class="flex items-center gap-3">
             <span class="material-symbols-outlined text-on-surface-variant">rebase_edit</span>
             <span class="text-on-surface font-body-lg">Ciclos de carga</span>
           </div>
-          <span id="ciclos-value" class="font-mono-data text-mono-data text-on-surface">124</span>
+          <span id="ciclos-value" class="font-mono-data text-mono-data text-on-surface">—</span>
         </div>
-        <div class="flex justify-between items-center py-3 border-b border-surface-variant/50 px-2 rounded-lg">
+        <div class="flex justify-between items-center py-3 border-b border-surface-variant/50 px-2">
           <div class="flex items-center gap-3">
             <span class="material-symbols-outlined text-on-surface-variant">flash_on</span>
             <span class="text-on-surface font-body-lg">Voltaje Total</span>
           </div>
-          <span id="voltaje-value" class="font-mono-data text-mono-data text-secondary">13.24V</span>
+          <span id="voltaje-value" class="font-mono-data text-mono-data text-secondary">—</span>
         </div>
-        <div class="flex justify-between items-center py-3 px-2 rounded-lg">
+        <div class="flex justify-between items-center py-3 px-2">
           <div class="flex items-center gap-3">
             <span class="material-symbols-outlined text-on-surface-variant">electrical_services</span>
             <span class="text-on-surface font-body-lg">Corriente</span>
           </div>
-          <span id="corriente-value" class="font-mono-data text-mono-data text-on-surface">-11.2A</span>
+          <span id="corriente-value" class="font-mono-data text-mono-data text-on-surface">—</span>
         </div>
       </section>
     </section>
 
-    <!-- ── CELLS ── -->
+    <!-- CELLS -->
     <section id="screen-cells" class="screen px-container-padding pt-6 max-w-md mx-auto w-full">
       <div class="mb-6 flex items-center justify-between cell-card rounded-xl p-4 glow-secondary">
         <div>
-          <span class="font-label-caps text-label-caps text-on-surface-variant mb-1 uppercase block">TEMPERATURA GLOBAL</span>
+          <span class="font-label-caps text-label-caps text-on-surface-variant mb-1 uppercase block">TEMPERATURA</span>
           <div class="flex items-baseline gap-1">
-            <span id="cell-temp" class="font-headline-lg text-headline-lg text-secondary">24.5</span>
+            <span id="cell-temp" class="font-headline-lg text-headline-lg text-secondary">—</span>
             <span class="font-headline-md text-secondary">°C</span>
           </div>
         </div>
@@ -299,189 +260,118 @@ tailwind.config = {
         </div>
       </div>
       <div class="grid grid-cols-2 gap-3 mb-6">
-        <div class="cell-card rounded-xl p-3 flex flex-col items-center justify-center text-center">
+        <div class="cell-card rounded-xl p-3 flex flex-col items-center text-center">
           <span class="font-label-caps text-label-caps text-on-surface-variant mb-1">DELTA MAX</span>
-          <span id="delta-max" class="font-mono-data text-mono-data text-primary">0.004V</span>
+          <span id="delta-max" class="font-mono-data text-mono-data text-primary">—</span>
         </div>
-        <div class="cell-card rounded-xl p-3 flex flex-col items-center justify-center text-center">
+        <div class="cell-card rounded-xl p-3 flex flex-col items-center text-center">
           <span class="font-label-caps text-label-caps text-on-surface-variant mb-1">ESTADO BMS</span>
-          <span id="bms-status" class="font-label-caps text-[10px] text-on-secondary-container bg-secondary-container px-2 py-0.5 rounded-full">BALANCEANDO</span>
+          <span id="bms-status" class="font-label-caps text-[10px] text-on-secondary-container bg-secondary-container px-2 py-0.5 rounded-full">—</span>
         </div>
       </div>
-      <h2 class="font-label-caps text-label-caps text-on-surface-variant px-1 mb-3">DETALLE DE CELDAS (LFP 4S)</h2>
-      <div id="cells-list" class="flex flex-col gap-card-gap pb-4">
-        <!-- Cells rendered by JS -->
+      <h2 class="font-label-caps text-label-caps text-on-surface-variant px-1 mb-3">CELDAS LFP</h2>
+      <div id="cells-list" class="flex flex-col gap-card-gap pb-4"></div>
+    </section>
+
+    <!-- HISTORY -->
+    <section id="screen-history" class="screen px-container-padding py-6 space-y-4 max-w-2xl mx-auto">
+      <div class="grid grid-cols-2 gap-card-gap">
+        <div class="glass-card rounded-xl p-4">
+          <p class="font-label-caps text-label-caps text-on-surface-variant mb-1">CICLOS TOTALES</p>
+          <p id="hist-ciclos" class="font-display-data text-[32px] text-on-surface leading-tight">—</p>
+          <p id="hist-salud" class="font-mono-data text-mono-data text-secondary">Salud: —</p>
+        </div>
+        <div class="glass-card rounded-xl p-4">
+          <p class="font-label-caps text-label-caps text-on-surface-variant mb-1">ENERGÍA HOY</p>
+          <p id="hist-energia" class="font-display-data text-[32px] text-on-surface leading-tight">—</p>
+          <p class="font-mono-data text-mono-data text-on-surface-variant">Wh acumulados</p>
+        </div>
       </div>
-      <div class="mt-4 cell-card rounded-xl p-4 border-l-4 border-l-secondary bg-secondary-container/5">
-        <div class="flex items-center gap-3">
-          <span class="material-symbols-outlined text-secondary">verified_user</span>
-          <p id="bms-msg" class="font-body-md text-on-surface">Todos los sistemas operativos. El balanceado de celdas está optimizando la longevidad del pack.</p>
+      <div>
+        <p class="font-label-caps text-label-caps text-on-surface-variant px-1 mb-3">HISTORIAL DE SESIONES</p>
+        <div id="history-list" class="flex flex-col gap-3">
+          <div class="glass-card rounded-xl p-6 flex flex-col items-center text-center">
+            <span class="material-symbols-outlined text-on-surface-variant text-[40px] mb-2">history</span>
+            <p class="font-body-md text-on-surface-variant">Sin sesiones aún.<br>Se guardan al desconectar.</p>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- ── HISTORY ── -->
-    <section id="screen-history" class="screen px-container-padding py-6 space-y-6 max-w-2xl mx-auto">
-      <div class="flex items-end justify-between slide-up-item">
-        <div>
-          <p class="font-label-caps text-label-caps text-on-surface-variant mb-1">CONSUMO TOTAL</p>
-          <div class="flex items-baseline gap-2">
-            <span id="hist-total" class="font-display-data text-display-data text-primary">1,280</span>
-            <span class="font-headline-md text-on-surface-variant">Watts</span>
-          </div>
-        </div>
-        <div class="bg-secondary-container/20 text-secondary px-3 py-1 rounded-full flex items-center gap-1">
-          <span class="material-symbols-outlined text-[16px]">trending_down</span>
-          <span class="font-label-caps text-label-caps">12% VS AYER</span>
-        </div>
-      </div>
-      <!-- Chart -->
-      <div class="glass-card rounded-xl p-4 overflow-hidden slide-up-item">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="font-label-caps text-label-caps text-on-surface-variant">CONSUMO (W) — ÚLTIMAS 24H</h3>
-          <div class="flex items-center gap-1">
-            <div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
-            <span class="text-[10px] font-label-caps text-on-surface-variant">ACTUAL</span>
-          </div>
-        </div>
-        <div class="h-40 w-full">
-          <svg class="w-full h-full" viewBox="0 0 400 160" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" style="stop-color:#adc6ff;stop-opacity:0.8"/>
-                <stop offset="100%" style="stop-color:#adc6ff;stop-opacity:0"/>
-              </linearGradient>
-            </defs>
-            <line stroke="#2c2c2e" stroke-dasharray="4" stroke-width="1" x1="0" y1="32" x2="400" y2="32"/>
-            <line stroke="#2c2c2e" stroke-dasharray="4" stroke-width="1" x1="0" y1="80" x2="400" y2="80"/>
-            <line stroke="#2c2c2e" stroke-dasharray="4" stroke-width="1" x1="0" y1="128" x2="400" y2="128"/>
-            <path class="spark-area" d="M0,144 L20,132 L40,136 L60,112 L80,116 L100,88 L120,96 L140,64 L160,68 L180,48 L200,52 L220,40 L240,56 L260,72 L280,104 L300,96 L320,120 L340,112 L360,136 L380,128 L400,148 V160 H0 Z"/>
-            <path class="spark-line" d="M0,144 L20,132 L40,136 L60,112 L80,116 L100,88 L120,96 L140,64 L160,68 L180,48 L200,52 L220,40 L240,56 L260,72 L280,104 L300,96 L320,120 L340,112 L360,136 L380,128 L400,148"/>
-            <g class="pulsing-point">
-              <circle cx="220" cy="40" r="5" fill="#adc6ff" stroke="#131315" stroke-width="2"/>
-            </g>
-          </svg>
-        </div>
-        <div class="flex justify-between mt-2">
-          <span class="font-mono-data text-mono-data text-on-surface-variant text-[10px]">00:00</span>
-          <span class="font-mono-data text-mono-data text-on-surface-variant text-[10px]">06:00</span>
-          <span class="font-mono-data text-mono-data text-on-surface-variant text-[10px]">12:00</span>
-          <span class="font-mono-data text-mono-data text-on-surface-variant text-[10px]">18:00</span>
-          <span class="font-mono-data text-mono-data text-on-surface-variant text-[10px]">AHORA</span>
-        </div>
-      </div>
-      <!-- Stats bento -->
-      <div class="grid grid-cols-2 gap-card-gap slide-up-item">
-        <div class="glass-card rounded-xl p-4 flex flex-col justify-between">
-          <div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center mb-3">
-            <span class="material-symbols-outlined text-primary">update</span>
-          </div>
-          <p class="font-label-caps text-label-caps text-on-surface-variant mb-2">CICLOS TOTALES</p>
-          <p id="hist-ciclos" class="font-display-data text-[32px] text-on-surface leading-tight">412</p>
-          <p id="hist-salud" class="font-mono-data text-mono-data text-secondary">Salud: 98%</p>
-        </div>
-        <div class="glass-card rounded-xl p-4 flex flex-col justify-between">
-          <div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center mb-3">
-            <span class="material-symbols-outlined text-primary">bolt</span>
-          </div>
-          <p class="font-label-caps text-label-caps text-on-surface-variant mb-2">ENERGÍA HOY</p>
-          <p id="hist-energia" class="font-display-data text-[32px] text-on-surface leading-tight">8.4</p>
-          <p class="font-mono-data text-mono-data text-on-surface-variant">kWh</p>
-        </div>
-        <div class="glass-card rounded-xl p-4 col-span-2 flex items-center justify-between">
-          <div class="flex items-center gap-4">
-            <div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center">
-              <span class="material-symbols-outlined text-tertiary">leaderboard</span>
-            </div>
-            <div>
-              <p class="font-label-caps text-label-caps text-on-surface-variant">PICO DE CONSUMO</p>
-              <p id="hist-pico" class="font-headline-md text-headline-md text-on-surface">2,450 W</p>
-            </div>
-          </div>
-          <div class="text-right">
-            <p class="font-mono-data text-mono-data text-on-surface-variant text-xs">Registrado a las</p>
-            <p id="hist-pico-hora" class="font-mono-data text-mono-data text-primary">14:22 PM</p>
-          </div>
-        </div>
-      </div>
-      <!-- Detail list -->
-      <div class="glass-card rounded-xl divide-y divide-surface-variant overflow-hidden slide-up-item">
-        <div class="p-4 flex justify-between items-center">
-          <div class="flex items-center gap-3">
-            <span class="material-symbols-outlined text-on-surface-variant">thermostat</span>
-            <span class="font-body-md text-on-surface">Temperatura Máxima</span>
-          </div>
-          <span id="hist-temp-max" class="font-mono-data text-mono-data text-on-surface">32.4°C</span>
-        </div>
-        <div class="p-4 flex justify-between items-center">
-          <div class="flex items-center gap-3">
-            <span class="material-symbols-outlined text-on-surface-variant">battery_profile</span>
-            <span class="font-body-md text-on-surface">Voltaje Mínimo</span>
-          </div>
-          <span id="hist-volt-min" class="font-mono-data text-mono-data text-on-surface">12.1V</span>
-        </div>
-        <div class="p-4 flex justify-between items-center">
-          <div class="flex items-center gap-3">
-            <span class="material-symbols-outlined text-on-surface-variant">avg_pace</span>
-            <span class="font-body-md text-on-surface">Promedio Diario</span>
-          </div>
-          <span id="hist-prom" class="font-mono-data text-mono-data text-on-surface">640W</span>
-        </div>
-      </div>
-    </section>
-
-    <!-- ── SETTINGS ── -->
+    <!-- SETTINGS -->
     <section id="screen-settings" class="screen px-container-padding pt-6 pb-8 max-w-md mx-auto">
       <h2 class="font-headline-lg text-headline-lg text-on-surface mb-6">Configuración</h2>
-      <!-- Device info -->
       <div class="glass-card rounded-xl p-4 mb-4">
-        <p class="font-label-caps text-label-caps text-on-surface-variant mb-3">DISPOSITIVO</p>
-        <div class="flex items-center gap-4">
-          <div class="w-12 h-12 rounded-xl bg-secondary-container/20 flex items-center justify-center">
-            <span class="material-symbols-outlined text-secondary" style="font-variation-settings:'FILL' 1;">battery_charging_full</span>
-          </div>
-          <div>
-            <p id="settings-device-name" class="font-headline-md text-on-surface">MUST 12V 100Ah</p>
-            <p id="settings-device-id" class="font-mono-data text-mono-data text-on-surface-variant text-xs">Modo demo</p>
-          </div>
-        </div>
-        <button onclick="disconnectDevice()"
-          class="w-full mt-4 h-10 bg-error-container/30 text-error font-label-caps text-label-caps rounded-lg flex items-center justify-center gap-2 active:scale-95 transition-transform">
-          <span class="material-symbols-outlined text-[16px]">bluetooth_disabled</span>
-          Desconectar
+        <p class="font-label-caps text-label-caps text-on-surface-variant mb-3">DISPOSITIVOS CONECTADOS</p>
+        <div id="settings-devices-list" class="flex flex-col gap-3"></div>
+        <button onclick="addBattery()"
+          class="w-full mt-4 h-10 bg-secondary/20 text-secondary font-label-caps text-label-caps rounded-lg flex items-center justify-center gap-2 active:scale-95 transition-transform">
+          <span class="material-symbols-outlined text-[16px]">add</span>
+          Agregar otra batería
         </button>
       </div>
-      <!-- Options -->
-      <div class="glass-card rounded-xl divide-y divide-surface-variant overflow-hidden mb-4">
-        <div class="p-4 flex justify-between items-center">
-          <span class="font-body-lg text-on-surface">Actualización automática</span>
-          <div id="toggle-auto" onclick="toggleAuto()" class="w-12 h-6 bg-secondary rounded-full relative cursor-pointer transition-colors">
-            <div class="w-5 h-5 bg-white rounded-full absolute top-0.5 right-0.5 transition-transform shadow-sm"></div>
+      <!-- Modo serie -->
+      <div class="glass-card rounded-xl p-4 mb-4">
+        <div class="flex justify-between items-center">
+          <div>
+            <p class="font-body-lg text-on-surface">Modo serie (2 baterías)</p>
+            <p class="font-label-caps text-label-caps text-on-surface-variant" style="font-size:10px;">Suma voltajes → 24V</p>
           </div>
-        </div>
-        <div class="p-4 flex justify-between items-center">
-          <span class="font-body-lg text-on-surface">Alertas de voltaje bajo</span>
-          <div id="toggle-alerts" onclick="toggleAlerts()" class="w-12 h-6 bg-secondary rounded-full relative cursor-pointer transition-colors">
-            <div class="w-5 h-5 bg-white rounded-full absolute top-0.5 right-0.5 transition-transform shadow-sm"></div>
+          <div id="toggle-series" onclick="toggleSeries()"
+            class="w-12 h-6 rounded-full relative cursor-pointer transition-all duration-300"
+            style="background:#353437">
+            <div class="w-5 h-5 bg-white rounded-full absolute top-0.5 left-0.5 transition-transform duration-200 shadow-sm"></div>
           </div>
-        </div>
-        <div class="p-4 flex justify-between items-center">
-          <span class="font-body-lg text-on-surface">Intervalo de actualización</span>
-          <select class="bg-surface-container text-on-surface font-mono-data text-mono-data rounded-lg px-2 py-1 border border-outline-variant">
-            <option>5s</option><option>10s</option><option selected>30s</option><option>60s</option>
-          </select>
         </div>
       </div>
-      <!-- About -->
+      <!-- Alertas -->
+      <div class="glass-card rounded-xl divide-y divide-surface-variant overflow-hidden mb-4">
+        <p class="font-label-caps text-label-caps text-on-surface-variant px-4 pt-3 pb-1">ALERTAS</p>
+        <div class="p-4 flex justify-between items-center">
+          <span class="font-body-lg text-on-surface">Carga completa (100%)</span>
+          <div id="toggle-charge" onclick="toggleChargeAlert()"
+            class="w-12 h-6 rounded-full relative cursor-pointer transition-all duration-300"
+            style="background:#42e355">
+            <div class="w-5 h-5 bg-white rounded-full absolute top-0.5 right-0.5 transition-transform duration-200 shadow-sm"></div>
+          </div>
+        </div>
+        <div class="p-4">
+          <div class="flex justify-between items-center mb-3">
+            <span class="font-body-lg text-on-surface">Descarga baja al</span>
+            <span id="discharge-label" class="font-mono-data text-mono-data text-secondary font-bold">20%</span>
+          </div>
+          <input type="range" id="discharge-slider" min="5" max="50" value="20" step="5"
+            class="w-full h-2 rounded-full cursor-pointer" oninput="setDischargePct(this.value)"/>
+          <div class="flex justify-between mt-1">
+            <span class="font-label-caps text-label-caps text-on-surface-variant" style="font-size:10px;">5%</span>
+            <span class="font-label-caps text-label-caps text-on-surface-variant" style="font-size:10px;">50%</span>
+          </div>
+        </div>
+        <div class="p-4 flex justify-between items-center">
+          <span class="font-body-lg text-on-surface">Actualización auto</span>
+          <div id="toggle-auto" onclick="toggleAuto()"
+            class="w-12 h-6 rounded-full relative cursor-pointer transition-all duration-300"
+            style="background:#42e355">
+            <div class="w-5 h-5 bg-white rounded-full absolute top-0.5 right-0.5 transition-transform duration-200 shadow-sm"></div>
+          </div>
+        </div>
+      </div>
+      <!-- Historial -->
+      <div class="glass-card rounded-xl p-4 mb-4 flex justify-between items-center">
+        <div>
+          <p class="font-body-lg text-on-surface">Borrar historial</p>
+          <p class="font-label-caps text-label-caps text-on-surface-variant" id="hist-count" style="font-size:10px;">0 sesiones guardadas</p>
+        </div>
+        <button onclick="clearHistory()" class="px-3 py-1.5 bg-error-container/30 text-error font-label-caps text-label-caps rounded-lg active:scale-95">Borrar</button>
+      </div>
       <div class="glass-card rounded-xl p-4 text-center">
         <p class="font-label-caps text-label-caps text-on-surface-variant mb-1">MUST MONITOR</p>
-        <p class="font-mono-data text-mono-data text-on-surface-variant text-xs">v1.0.0 · LiFePO4 BLE</p>
+        <p class="font-mono-data text-mono-data text-on-surface-variant text-xs">v2.0.0 · LiFePO4 BLE · Multi-bat</p>
       </div>
     </section>
 
-  </main><!-- /main -->
+  </main>
 
-  <!-- Bottom Nav -->
   <nav class="fixed bottom-0 left-0 w-full bg-surface-container border-t border-surface-variant flex justify-around items-center px-4 py-2 pb-safe z-50 shadow-lg">
     <button class="nav-btn flex flex-col items-center justify-center px-3 py-1 rounded-xl active:scale-90 transition-all duration-200" data-tab="dashboard" onclick="switchTab('dashboard')">
       <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">dashboard</span>
@@ -500,87 +390,211 @@ tailwind.config = {
       <span class="font-label-caps text-label-caps mt-0.5">Settings</span>
     </button>
   </nav>
-
-</div><!-- /app-main -->
+</div>
 
 <script>
-// ═══════════════════════════════════════
+// ═══════════════════════════════════════════
+// BLE CONSTANTS (Xiaoxiang / JBD BMS)
+// ═══════════════════════════════════════════
+const JBD_SVC  = '0000ff00-0000-1000-8000-00805f9b34fb';
+const JBD_RX   = '0000ff01-0000-1000-8000-00805f9b34fb';
+const JBD_TX   = '0000ff02-0000-1000-8000-00805f9b34fb';
+const CMD_BASIC = new Uint8Array([0xDD,0xA5,0x03,0x00,0xFF,0xFD,0x77]);
+const CMD_CELLS = new Uint8Array([0xDD,0xA5,0x04,0x00,0xFF,0xFC,0x77]);
+
+// ═══════════════════════════════════════════
 // STATE
-// ═══════════════════════════════════════
-let btDevice = null;
-let btChar   = null;
-let demoMode = false;
+// ═══════════════════════════════════════════
+let batteries    = [];   // [{id,name,device,txChar,data,buf,poll,startTime,energyWh,lastTs,peakW,minV,maxTemp}]
+let activeBatIdx = 0;
+let seriesMode   = false;
+let demoMode     = false;
 let demoInterval = null;
 let autoRefresh  = true;
-let alertsOn     = true;
+let alertChargeComplete = true;
+let alertDischargePct   = 20;
 let qrStream     = null;
+// Prevent duplicate alerts per battery
+const _alerted = {}; // {batId: {charge:bool, discharge:bool}}
 
-const DEMO_DATA = {
-  soc: 85, status: 'DESCARGANDO', systemOk: true,
-  consumo: 142, autonomia: '08:45', cargaEta: 'Carga al 100% en 2h',
-  health: 98.4, temp: 24.5, ciclos: 124, voltaje: 13.24, corriente: -11.2,
-  cells: [
-    { id:'C_A1_01', v:3.325, balancing:true,  pct:92 },
-    { id:'C_A1_02', v:3.321, balancing:false, pct:98 },
-    { id:'C_A1_03', v:3.324, balancing:true,  pct:85 },
-    { id:'C_A1_04', v:3.322, balancing:false, pct:95 },
-  ],
-  bmsStatus: 'BALANCEANDO', deltaMax: '0.004V',
+const DEMO_BAT = {
+  id:'demo', name:'MUST 12V 100Ah · DEMO',
+  data:{ soc:85, status:'DESCARGANDO', consumo:142, autonomia:'08:45',
+    health:98, temp:24.5, ciclos:124, voltaje:13.24, corriente:-11.2,
+    cells:[
+      {id:'C1',v:3.325,balancing:true, pct:92},
+      {id:'C2',v:3.321,balancing:false,pct:98},
+      {id:'C3',v:3.324,balancing:true, pct:85},
+      {id:'C4',v:3.322,balancing:false,pct:95},
+    ], deltaMax:'0.004V'
+  }
 };
 
-// ═══════════════════════════════════════
+// ═══════════════════════════════════════════
 // NAVIGATION
-// ═══════════════════════════════════════
+// ═══════════════════════════════════════════
 function switchTab(tab) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-' + tab).classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b => {
-    const active = b.dataset.tab === tab;
-    b.classList.toggle('bg-secondary-container', active);
-    b.classList.toggle('text-on-secondary-container', active);
-    b.classList.toggle('text-on-surface-variant', !active);
+    const on = b.dataset.tab === tab;
+    b.style.background = on ? '#1f1f21' : '';
+    b.style.color      = on ? '#42e355' : '';
   });
-  if (tab === 'cells') renderCells();
+  if (tab === 'cells')    renderCells();
+  if (tab === 'history')  renderHistory();
+  if (tab === 'settings') renderSettingsDevices();
 }
-
-// Set initial active nav
 switchTab('dashboard');
 
-// ═══════════════════════════════════════
-// CONNECTION
-// ═══════════════════════════════════════
-// JBD/Xiaoxiang BMS service + characteristics
-const JBD_SVC  = '0000ff00-0000-1000-8000-00805f9b34fb';
-const JBD_RX   = '0000ff01-0000-1000-8000-00805f9b34fb'; // notifications (BMS → phone)
-const JBD_TX   = '0000ff02-0000-1000-8000-00805f9b34fb'; // write (phone → BMS)
-let   btTxChar = null;
-let   pollTimer = null;
-// JBD commands
-const CMD_BASIC = new Uint8Array([0xDD, 0xA5, 0x03, 0x00, 0xFF, 0xFD, 0x77]);
-const CMD_CELLS = new Uint8Array([0xDD, 0xA5, 0x04, 0x00, 0xFF, 0xFC, 0x77]);
+// ═══════════════════════════════════════════
+// MULTI-BATTERY MANAGEMENT
+// ═══════════════════════════════════════════
+function makeBattery(device) {
+  return {
+    id: device.id, name: device.name || 'BMS',
+    device, txChar: null,
+    data: { soc:0, status:'—', consumo:0, autonomia:'—', health:98,
+            temp:0, ciclos:0, voltaje:0, corriente:0, cells:[], deltaMax:'—' },
+    buf: new Uint8Array(0),
+    poll: null,
+    startTime: Date.now(),
+    energyWh: 0,
+    lastTs: Date.now(),
+    peakW: 0,
+    minV: 99,
+    maxTemp: 0,
+  };
+}
 
-async function connectBluetooth() {
-  if (!navigator.bluetooth) {
-    showConnectMsg('Bluetooth no disponible. Usa Chrome en Android (no funciona en iOS/Safari).', true);
+function activeBat() {
+  if (demoMode) return DEMO_BAT;
+  return batteries[activeBatIdx] || batteries[0] || DEMO_BAT;
+}
+
+function addBattery() {
+  if (batteries.length >= 4) {
+    alert('Máximo 4 baterías conectadas.');
     return;
   }
-  showConnectMsg('Selecciona tu batería en la lista que aparecerá…');
+  connectBluetooth();
+}
+
+function switchBattery(idx) {
+  if (idx === 'serie') {
+    seriesMode = true;
+    updateBatTabs();
+    updateUI();
+    return;
+  }
+  seriesMode = false;
+  activeBatIdx = idx;
+  updateBatTabs();
+  updateUI(batteries[idx]?.data);
+}
+
+function updateBatTabs() {
+  const tabs = document.getElementById('bat-tabs');
+  if (!tabs) return;
+  if (batteries.length <= 1 && !seriesMode) {
+    tabs.style.display = 'none'; return;
+  }
+  tabs.style.display = 'flex';
+  tabs.innerHTML = batteries.map((b,i) =>
+    `<button class="bat-tab ${!seriesMode && activeBatIdx===i ? 'active':''}" onclick="switchBattery(${i})">
+      BAT ${i+1} · ${b.name.substring(0,8)}
+    </button>`
+  ).join('') +
+  (batteries.length >= 2 ?
+    `<button class="bat-tab ${seriesMode?'serie':''}" onclick="switchBattery('serie')">SERIE</button>` : '');
+}
+
+function renderSettingsDevices() {
+  const el = document.getElementById('settings-devices-list');
+  if (!el) return;
+  if (batteries.length === 0) {
+    el.innerHTML = '<p class="font-body-md text-on-surface-variant text-center py-2">Sin baterías conectadas</p>';
+  } else {
+    el.innerHTML = batteries.map((b,i) => `
+      <div class="flex items-center justify-between py-2">
+        <div>
+          <p class="font-headline-md text-on-surface">BAT ${i+1}: ${b.name}</p>
+          <p class="font-mono-data text-mono-data text-on-surface-variant text-xs">${b.id.substring(0,20)}</p>
+        </div>
+        <button onclick="disconnectBat(${i})"
+          class="px-3 py-1 bg-error-container/30 text-error font-label-caps text-label-caps rounded-lg active:scale-95">
+          Quitar
+        </button>
+      </div>`).join('');
+  }
+  const hist = JSON.parse(localStorage.getItem('must-history')||'[]');
+  const countEl = document.getElementById('hist-count');
+  if (countEl) countEl.textContent = hist.length + ' sesiones guardadas';
+}
+
+function disconnectBat(idx) {
+  const b = batteries[idx];
+  if (!b) return;
+  saveSession(b);
+  if (b.poll) clearInterval(b.poll);
+  if (b.device && b.device.gatt.connected) b.device.gatt.disconnect();
+  batteries.splice(idx, 1);
+  if (batteries.length === 0) {
+    disconnectDevice();
+  } else {
+    activeBatIdx = Math.min(activeBatIdx, batteries.length - 1);
+    updateBatTabs();
+    updateUI(batteries[activeBatIdx]?.data);
+  }
+}
+
+// ═══════════════════════════════════════════
+// BLUETOOTH CONNECTION
+// ═══════════════════════════════════════════
+async function connectBluetooth() {
+  if (!navigator.bluetooth) {
+    showConnectMsg('Bluetooth no disponible. Usa Chrome en Android.', true);
+    return;
+  }
+  showConnectMsg('Selecciona tu batería en la lista…');
   try {
-    btDevice = await navigator.bluetooth.requestDevice({
+    const device = await navigator.bluetooth.requestDevice({
       filters: [{ services: [JBD_SVC] }],
       optionalServices: [JBD_SVC]
     });
-    showConnectMsg('Conectando a ' + (btDevice.name || 'BMS') + '…');
-    const server = await btDevice.gatt.connect();
+    showConnectMsg('Conectando a ' + (device.name || 'BMS') + '…');
+    const server  = await device.gatt.connect();
     const service = await server.getPrimaryService(JBD_SVC);
     const rxChar  = await service.getCharacteristic(JBD_RX);
-    btTxChar      = await service.getCharacteristic(JBD_TX);
+    const txChar  = await service.getCharacteristic(JBD_TX);
     await rxChar.startNotifications();
-    rxChar.addEventListener('characteristicvaluechanged', onBtData);
+
+    const bat = makeBattery(device);
+    bat.txChar = txChar;
+    const batIdx = batteries.length;
+    batteries.push(bat);
+
+    rxChar.addEventListener('characteristicvaluechanged', (e) => onBtData(e, batIdx));
+    device.addEventListener('gattserverdisconnected', () => onDisconnected(batIdx));
+
     demoMode = false;
-    showMainApp(btDevice.name || 'MUST BMS', btDevice.id);
-    btDevice.addEventListener('gattserverdisconnected', onDisconnected);
-    startPolling();
+    if (batteries.length === 1) showMainApp(bat.name, bat.id);
+    activeBatIdx = batIdx;
+    updateBatTabs();
+
+    // Poll every 10s
+    const poll = () => {
+      if (bat.txChar) bat.txChar.writeValue(CMD_BASIC).catch(() => {});
+    };
+    poll();
+    bat.poll = setInterval(poll, 10000);
+
+    hideConnectMsg();
+
+    // Request notification permission on first connect
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
   } catch(err) {
     if (err.name === 'NotFoundError') {
       showConnectMsg('No se encontró el BMS. Asegúrate de que la batería esté encendida.', true);
@@ -592,146 +606,286 @@ async function connectBluetooth() {
   }
 }
 
-// Buffer para ensamblar respuestas fragmentadas
-let _buf = new Uint8Array(0);
+function onDisconnected(idx) {
+  const b = batteries[idx];
+  if (!b) return;
+  showConnectMsg('Batería ' + b.name + ' desconectada. Reconectando…');
+  b.device.gatt.connect()
+    .then(() => hideConnectMsg())
+    .catch(() => disconnectBat(idx));
+}
 
-function onBtData(event) {
-  const chunk = new Uint8Array(event.target.value.buffer);
-  const merged = new Uint8Array(_buf.length + chunk.length);
-  merged.set(_buf); merged.set(chunk, _buf.length);
-  _buf = merged;
-  // Espera el byte de fin 0x77
-  if (_buf[_buf.length - 1] === 0x77) {
-    parseBmsData(_buf);
-    _buf = new Uint8Array(0);
+// ═══════════════════════════════════════════
+// BLE DATA PARSING (JBD protocol)
+// ═══════════════════════════════════════════
+function onBtData(event, batIdx) {
+  const b   = batteries[batIdx];
+  if (!b) return;
+  const chunk  = new Uint8Array(event.target.value.buffer);
+  const merged = new Uint8Array(b.buf.length + chunk.length);
+  merged.set(b.buf); merged.set(chunk, b.buf.length);
+  b.buf = merged;
+  if (b.buf[b.buf.length - 1] === 0x77) {
+    parseBmsData(b.buf, batIdx);
+    b.buf = new Uint8Array(0);
   }
 }
 
-function parseBmsData(b) {
+function parseBmsData(bytes, batIdx) {
+  const b = batteries[batIdx];
+  if (!b || bytes[0] !== 0xDD) return;
+  const d = b.data;
   try {
-    if (b[0] !== 0xDD) return;
-    if (b[1] === 0x03 && b[2] === 0x00) {
-      // Basic info response
-      const volts   = ((b[4] << 8) | b[5]) / 100;
-      const amps    = (((b[6] << 8) | b[7]) << 16 >> 16) / 100; // signed
-      const remain  = ((b[8] << 8) | b[9]) / 100;    // Ah restantes
-      const nominal = ((b[10] << 8) | b[11]) / 100;  // capacidad nominal
-      const cycles  = (b[12] << 8) | b[13];
-      const soc     = b[23];
-      const cells_n = b[25];
-      const temps_n = b[26];
-      // Temperatura (primera sonda)
-      const tempRaw = (b[27] << 8) | b[28];
-      const temp    = (tempRaw - 2731) / 10;
-      // Estado de carga
-      const status  = amps > 0.1 ? 'CARGANDO' : amps < -0.1 ? 'DESCARGANDO' : 'EN REPOSO';
-      const consumo = Math.abs(amps * volts);
-      const autonomia_h = amps < -0.1 ? (remain / Math.abs(amps)) : 0;
-      const h = Math.floor(autonomia_h);
-      const m = Math.round((autonomia_h - h) * 60);
-      const health = nominal > 0 ? Math.round((remain / nominal) * 100) : 98;
-      DEMO_DATA.soc = soc; DEMO_DATA.voltaje = volts; DEMO_DATA.corriente = amps.toFixed(1);
-      DEMO_DATA.temp = temp.toFixed(1); DEMO_DATA.ciclos = cycles;
-      DEMO_DATA.status = status; DEMO_DATA.consumo = Math.round(consumo);
-      DEMO_DATA.autonomia = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-      DEMO_DATA.health = health;
-      updateUI(DEMO_DATA);
-      // Pide voltajes de celdas a continuación
-      if (btTxChar) btTxChar.writeValue(CMD_CELLS).catch(() => {});
+    if (bytes[1] === 0x03 && bytes[2] === 0x00) {
+      const volts  = ((bytes[4] << 8) | bytes[5]) / 100;
+      const amps   = (((bytes[6] << 8) | bytes[7]) << 16 >> 16) / 100;
+      const remain = ((bytes[8]  << 8) | bytes[9])  / 100;
+      const cap    = ((bytes[10] << 8) | bytes[11]) / 100;
+      d.ciclos  = (bytes[12] << 8) | bytes[13];
+      d.soc     = bytes[23];
+      d.voltaje = volts;
+      d.corriente = parseFloat(amps.toFixed(2));
+      d.temp    = parseFloat((( ((bytes[27]<<8)|bytes[28]) - 2731) / 10).toFixed(1));
+      d.health  = cap > 0 ? Math.round((remain / cap) * 100) : 98;
+      d.status  = amps > 0.1 ? 'CARGANDO' : amps < -0.1 ? 'DESCARGANDO' : 'EN REPOSO';
+      const watts = Math.abs(amps * volts);
+      d.consumo = Math.round(watts);
+      const hrs = amps < -0.1 ? remain / Math.abs(amps) : 0;
+      const h = Math.floor(hrs), m = Math.round((hrs - h) * 60);
+      d.autonomia = hrs > 0 ? `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}` : '—';
+
+      // Energy accumulation (Wh)
+      const now = Date.now();
+      const dt  = (now - b.lastTs) / 3600000;
+      b.energyWh += watts * dt;
+      b.lastTs    = now;
+      if (watts > b.peakW)   b.peakW   = watts;
+      if (volts < b.minV)    b.minV    = volts;
+      if (d.temp > b.maxTemp) b.maxTemp = d.temp;
+
+      // History energy display
+      set('hist-energia', Math.round(b.energyWh));
+      set('hist-ciclos',  d.ciclos);
+      set('hist-salud',   'Salud: ' + d.health + '%');
+
+      // Request cell voltages
+      if (b.txChar) b.txChar.writeValue(CMD_CELLS).catch(() => {});
+
+      // Check alerts
+      checkAlerts(b, batIdx);
+
+      // Update UI if this is the active battery
+      if (batIdx === activeBatIdx && !seriesMode) updateUI(d);
+      if (seriesMode) updateSeriesUI();
     }
-    if (b[1] === 0x04 && b[2] === 0x00) {
-      // Cell voltages response
-      const n = (b[3]) / 2;
+    if (bytes[1] === 0x04 && bytes[2] === 0x00) {
+      const n = bytes[3] / 2;
       const cells = [];
-      const vmin = 3.0, vmax = 3.65;
       for (let i = 0; i < n; i++) {
-        const v = ((b[4 + i*2] << 8) | b[5 + i*2]) / 1000;
-        const pct = Math.round(Math.max(0, Math.min(100, (v - vmin) / (vmax - vmin) * 100)));
-        cells.push({ id:`C${i+1}`, v, balancing: false, pct });
+        const v = ((bytes[4+i*2] << 8) | bytes[5+i*2]) / 1000;
+        const pct = Math.round(Math.max(0, Math.min(100, (v-3.0)/0.65*100)));
+        cells.push({ id:`C${i+1}`, v, balancing:false, pct });
       }
-      // Detectar balanceo: celda con mayor voltaje relativo
-      const vavg = cells.reduce((s,c) => s + c.v, 0) / cells.length;
-      cells.forEach(c => { c.balancing = c.v > vavg + 0.002; });
-      const delta = (Math.max(...cells.map(c=>c.v)) - Math.min(...cells.map(c=>c.v))).toFixed(3);
-      DEMO_DATA.cells = cells;
-      DEMO_DATA.deltaMax = delta + 'V';
-      renderCells();
+      const vavg = cells.reduce((s,c)=>s+c.v,0)/cells.length;
+      cells.forEach(c=>{ c.balancing = c.v > vavg+0.002; });
+      d.cells = cells;
+      d.deltaMax = cells.length > 0
+        ? (Math.max(...cells.map(c=>c.v)) - Math.min(...cells.map(c=>c.v))).toFixed(3) + 'V'
+        : '—';
+      if (batIdx === activeBatIdx) renderCells();
     }
   } catch(e) { console.error('parseBmsData', e); }
 }
 
-function onDisconnected() {
-  showConnectMsg('Dispositivo desconectado. Reconectando…');
-  btDevice.gatt.connect().then(() => {
-    hideConnectMsg();
-  }).catch(() => {
-    disconnectDevice();
+// ═══════════════════════════════════════════
+// SERIES MODE
+// ═══════════════════════════════════════════
+function updateSeriesUI() {
+  if (batteries.length < 2) return;
+  const b1 = batteries[0].data, b2 = batteries[1].data;
+  const soc    = Math.round((b1.soc + b2.soc) / 2);
+  const volts  = parseFloat((b1.voltaje + b2.voltaje).toFixed(2));
+  const amps   = parseFloat(((b1.corriente + b2.corriente) / 2).toFixed(2));
+  const watts  = Math.round(Math.abs(amps * volts));
+  const temp   = parseFloat(((b1.temp + b2.temp) / 2).toFixed(1));
+  const status = b1.status;
+  const hrs    = amps < -0.1 ? (soc * 2 / Math.abs(amps)) : 0;
+  const h = Math.floor(hrs), m = Math.round((hrs-h)*60);
+  updateUI({ soc, voltaje:volts, corriente:amps, consumo:watts, temp,
+    status, health:Math.round((b1.health+b2.health)/2),
+    ciclos:Math.max(b1.ciclos,b2.ciclos),
+    autonomia: hrs>0 ? `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}` : '—',
+    cells:[], deltaMax:'—'
   });
 }
 
-function startDemo() {
-  demoMode = true;
-  showMainApp('MUST 12V 100Ah · DEMO', 'demo');
-  simulateData();
-  demoInterval = setInterval(simulateData, 5000);
+// ═══════════════════════════════════════════
+// ALERTS
+// ═══════════════════════════════════════════
+function checkAlerts(bat, idx) {
+  if (!_alerted[bat.id]) _alerted[bat.id] = {};
+  const d   = bat.data;
+  const key = bat.id;
+
+  // Charge complete
+  if (alertChargeComplete && d.soc >= 100 && d.status === 'CARGANDO') {
+    if (!_alerted[key].charge) {
+      _alerted[key].charge = true;
+      notify('✅ Batería cargada al 100%', `${bat.name} — desconecta el cargador.`);
+    }
+  } else if (d.soc < 95) {
+    _alerted[key].charge = false;
+  }
+
+  // Discharge low
+  if (d.soc <= alertDischargePct && d.status === 'DESCARGANDO') {
+    if (!_alerted[key].discharge) {
+      _alerted[key].discharge = true;
+      notify(`⚠️ Batería baja: ${d.soc}%`, `${bat.name} — conecta el cargador.`);
+    }
+  } else if (d.soc > alertDischargePct + 5) {
+    _alerted[key].discharge = false;
+  }
 }
 
-function simulateData() {
-  const soc   = Math.max(5, Math.min(100, DEMO_DATA.soc + (Math.random() - 0.52) * 2));
-  const cons  = Math.max(50, Math.min(500, DEMO_DATA.consumo + (Math.random() - 0.5) * 30));
-  const temp  = parseFloat((DEMO_DATA.temp + (Math.random() - 0.5) * 0.5).toFixed(1));
-  const volt  = parseFloat((12.5 + (soc / 100) * 1.2).toFixed(2));
-  DEMO_DATA.soc      = Math.round(soc);
-  DEMO_DATA.consumo  = Math.round(cons);
-  DEMO_DATA.temp     = temp;
-  DEMO_DATA.voltaje  = volt;
-  DEMO_DATA.corriente = -(cons / volt).toFixed(1);
-  const hrs  = Math.max(0, ((soc * 1.28) / cons)).toFixed(2);
-  const h    = Math.floor(hrs); const m = Math.round((hrs - h) * 60);
-  DEMO_DATA.autonomia = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-  updateUI(DEMO_DATA);
+function notify(title, body) {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification(title, { body, icon: 'icons/icon-192.svg' });
+  } else {
+    // Fallback: visual banner
+    const banner = document.createElement('div');
+    banner.style.cssText = 'position:fixed;top:70px;left:16px;right:16px;z-index:9999;background:#1f1f21;border:1px solid #42e355;border-radius:12px;padding:12px 16px;color:#e4e2e4;font-family:Inter,sans-serif;font-size:14px;';
+    banner.innerHTML = `<b>${title}</b><br><span style="color:#c1c6d7;font-size:12px;">${body}</span>`;
+    document.body.appendChild(banner);
+    setTimeout(() => banner.remove(), 6000);
+  }
 }
 
-// ═══════════════════════════════════════
+// ═══════════════════════════════════════════
+// HISTORY
+// ═══════════════════════════════════════════
+function saveSession(bat) {
+  if (bat.id === 'demo') return;
+  const durationMs = Date.now() - bat.startTime;
+  if (durationMs < 10000) return; // skip very short sessions
+  const sessions = JSON.parse(localStorage.getItem('must-history') || '[]');
+  sessions.unshift({
+    name:    bat.name,
+    date:    new Date(bat.startTime).toLocaleString('es'),
+    dur:     fmtDuration(durationMs),
+    whTotal: parseFloat(bat.energyWh.toFixed(1)),
+    avgW:    durationMs > 0 ? Math.round(bat.energyWh / (durationMs/3600000)) : 0,
+    peakW:   Math.round(bat.peakW),
+    minV:    bat.minV < 99 ? bat.minV.toFixed(2) : '—',
+    maxTemp: bat.maxTemp > 0 ? bat.maxTemp.toFixed(1) : '—',
+  });
+  sessions.splice(100);
+  localStorage.setItem('must-history', JSON.stringify(sessions));
+}
+
+function fmtDuration(ms) {
+  const h = Math.floor(ms/3600000);
+  const m = Math.floor((ms%3600000)/60000);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+function renderHistory() {
+  const sessions = JSON.parse(localStorage.getItem('must-history') || '[]');
+  const list = document.getElementById('history-list');
+  if (!list) return;
+  if (sessions.length === 0) {
+    list.innerHTML = `<div class="glass-card rounded-xl p-6 flex flex-col items-center text-center">
+      <span class="material-symbols-outlined text-on-surface-variant text-[40px] mb-2">history</span>
+      <p class="font-body-md text-on-surface-variant">Sin sesiones aún.<br>Se guardan al desconectar.</p>
+    </div>`;
+    return;
+  }
+  list.innerHTML = sessions.map(s => `
+    <div class="glass-card rounded-xl p-4">
+      <div class="flex justify-between items-start mb-2">
+        <div>
+          <p class="font-label-caps text-label-caps text-on-surface-variant">${s.date}</p>
+          <p class="font-headline-md text-on-surface">${s.name}</p>
+        </div>
+        <span class="font-mono-data text-mono-data text-primary">${s.dur}</span>
+      </div>
+      <div class="grid grid-cols-3 gap-2 mt-3">
+        <div class="bg-surface-container rounded-lg p-2 text-center">
+          <p class="font-label-caps text-label-caps text-on-surface-variant" style="font-size:9px;">ENERGÍA</p>
+          <p class="font-mono-data text-mono-data text-on-surface">${s.whTotal} Wh</p>
+        </div>
+        <div class="bg-surface-container rounded-lg p-2 text-center">
+          <p class="font-label-caps text-label-caps text-on-surface-variant" style="font-size:9px;">PROM</p>
+          <p class="font-mono-data text-mono-data text-on-surface">${s.avgW} W</p>
+        </div>
+        <div class="bg-surface-container rounded-lg p-2 text-center">
+          <p class="font-label-caps text-label-caps text-on-surface-variant" style="font-size:9px;">PICO</p>
+          <p class="font-mono-data text-mono-data text-tertiary">${s.peakW} W</p>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function clearHistory() {
+  if (!confirm('¿Borrar todo el historial?')) return;
+  localStorage.removeItem('must-history');
+  renderHistory();
+  const el = document.getElementById('hist-count');
+  if (el) el.textContent = '0 sesiones guardadas';
+}
+
+// ═══════════════════════════════════════════
 // UI UPDATE
-// ═══════════════════════════════════════
+// ═══════════════════════════════════════════
 function showMainApp(name, id) {
   document.getElementById('app-connect').style.display = 'none';
   document.getElementById('app-main').classList.remove('hidden');
   document.getElementById('device-name').textContent = name;
-  document.getElementById('settings-device-name').textContent = name;
-  document.getElementById('settings-device-id').textContent = id || 'Bluetooth';
-  if (demoMode) document.getElementById('demo-badge').classList.remove('hidden');
-  updateUI(DEMO_DATA);
+  const dmBadge = document.getElementById('demo-badge');
+  if (demoMode && dmBadge) dmBadge.classList.remove('hidden');
+  updateUI(activeBat().data);
 }
 
 function updateUI(d) {
-  const soc = d.soc ?? DEMO_DATA.soc;
-  // SOC ring: circumference = 2π×100 = 628
+  if (!d) d = activeBat().data;
+  const soc = d.soc ?? 0;
   const ring = document.getElementById('soc-ring');
   if (ring) ring.style.strokeDashoffset = 628 - (628 * soc / 100);
-  set('soc-value-num', soc + '%');
+  const socColor = soc > 50 ? '#42e355' : soc > 20 ? '#ffb868' : '#ffb4ab';
+  if (ring) ring.setAttribute('stroke', socColor);
+
   const socEl = document.getElementById('soc-value');
   if (socEl) socEl.innerHTML = soc + '<span class="text-headline-md font-headline-md text-on-surface-variant">%</span>';
+  const socSt = document.getElementById('soc-status');
+  if (socSt) { socSt.textContent = d.status || '—'; socSt.style.color = socColor; }
 
-  const status = soc > 50 ? 'OK' : soc > 20 ? 'BAJO' : 'CRÍTICO';
-  const statusColor = soc > 50 ? 'text-secondary' : soc > 20 ? 'text-tertiary' : 'text-error';
-  const socStatus = document.getElementById('soc-status');
-  if (socStatus) { socStatus.textContent = d.status ?? 'DESCARGANDO'; }
-
-  set('consumo-value',   d.consumo  ? Math.round(d.consumo) : '—');
+  set('consumo-value',   d.consumo  ?? '—');
   set('autonomia-value', d.autonomia ?? '—');
-  set('health-value',    d.health   ?? DEMO_DATA.health);
-  set('temp-value',      (d.temp    ?? DEMO_DATA.temp) + '°C');
-  set('ciclos-value',    d.ciclos   ?? DEMO_DATA.ciclos);
-  set('voltaje-value',   (d.voltaje ?? DEMO_DATA.voltaje) + 'V');
-  set('corriente-value', (d.corriente ?? DEMO_DATA.corriente) + 'A');
-  set('cell-temp',       d.temp ?? DEMO_DATA.temp);
-  set('hist-ciclos',     d.ciclos ?? DEMO_DATA.ciclos);
-  set('hist-salud',      'Salud: ' + (d.health ?? DEMO_DATA.health) + '%');
+  set('health-value',    d.health   ?? '—');
+  set('temp-value',      d.temp     ? d.temp + '°C' : '—');
+  set('ciclos-value',    d.ciclos   ?? '—');
+  set('voltaje-value',   d.voltaje  ? d.voltaje + 'V' : '—');
+  set('corriente-value', d.corriente !== undefined ? d.corriente + 'A' : '—');
+  set('cell-temp',       d.temp     ?? '—');
+  set('hist-ciclos',     d.ciclos   ?? '—');
+  set('hist-salud',      d.health   ? 'Salud: ' + d.health + '%' : '—');
+
+  const hb = document.getElementById('health-badge');
+  if (hb) {
+    const h = d.health ?? 100;
+    hb.textContent = h >= 90 ? 'EXCELENTE' : h >= 75 ? 'BUENA' : h >= 60 ? 'REGULAR' : 'DEGRADADA';
+    hb.style.background = h >= 90 ? '#04c339' : h >= 75 ? '#ce7f00' : '#93000a';
+    hb.style.color = '#fff';
+  }
 
   const cb = document.getElementById('consumo-bar');
-  if (cb) cb.style.width = Math.min(100, (d.consumo / 500 * 100)) + '%';
+  if (cb) cb.style.width = Math.min(100, (d.consumo||0) / 500 * 100) + '%';
+
+  const sb = document.getElementById('serie-badge');
+  if (sb) sb.style.display = seriesMode ? 'flex' : 'none';
+
+  const devName = document.getElementById('device-name');
+  if (devName) devName.textContent = seriesMode ? 'SERIE 24V' : (activeBat().name || 'MUST');
 }
 
 function set(id, val) {
@@ -740,65 +894,83 @@ function set(id, val) {
 }
 
 function renderCells() {
-  const cells = DEMO_DATA.cells;
+  const cells = activeBat().data.cells || [];
   const list  = document.getElementById('cells-list');
   if (!list) return;
+  if (cells.length === 0) {
+    list.innerHTML = '<div class="cell-card rounded-xl p-6 text-center text-on-surface-variant">Sin datos de celdas</div>';
+    return;
+  }
   list.innerHTML = cells.map((c, i) => `
-    <div class="cell-card rounded-xl p-4 relative overflow-hidden">
+    <div class="cell-card rounded-xl p-4">
       <div class="flex justify-between items-start mb-3">
-        <div class="flex flex-col">
-          <span class="font-label-caps text-label-caps text-on-surface-variant">CELDA 0${i+1}</span>
+        <div>
+          <span class="font-label-caps text-label-caps text-on-surface-variant">CELDA ${i+1}</span>
           <div class="flex items-center gap-2 mt-1">
             <span class="font-mono-data text-headline-lg text-on-surface">${c.v.toFixed(3)}V</span>
-            ${c.balancing ? '<span class="material-symbols-outlined text-secondary text-sm" style="font-variation-settings:\'FILL\' 1;">sync_alt</span>' : ''}
+            ${c.balancing ? '<span class="material-symbols-outlined text-secondary" style="font-size:16px;font-variation-settings:\'FILL\' 1;">sync_alt</span>' : ''}
           </div>
         </div>
-        <div class="bg-surface-container-high px-2 py-1 rounded text-[10px] font-mono-data text-outline">ID: ${c.id}</div>
+        <div class="bg-surface-container-high px-2 py-1 rounded text-[10px] font-mono-data text-outline">${c.id}</div>
       </div>
-      <div class="space-y-1.5">
-        <div class="flex justify-between text-[10px] font-label-caps text-on-surface-variant">
-          <span>BALANCEO</span>
-          <span class="${c.balancing ? 'text-secondary' : 'text-on-surface-variant'}">${c.balancing ? c.pct + '%' : 'PASIVO'}</span>
-        </div>
-        <div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
-          <div class="h-full rounded-full ${c.balancing ? 'shimmer' : 'bg-primary opacity-40'}" style="width:${c.pct}%"></div>
-        </div>
+      <div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
+        <div class="h-full rounded-full ${c.balancing ? 'shimmer' : 'bg-primary'}" style="width:${c.pct}%;opacity:${c.balancing?1:0.6}"></div>
+      </div>
+      <div class="flex justify-between mt-1">
+        <span class="font-label-caps text-on-surface-variant" style="font-size:9px;">${c.balancing?'BALANCEANDO':'PASIVO'}</span>
+        <span class="font-label-caps ${c.balancing?'text-secondary':'text-on-surface-variant'}" style="font-size:9px;">${c.pct}%</span>
       </div>
     </div>`).join('');
 }
 
-// ═══════════════════════════════════════
+// ═══════════════════════════════════════════
+// DEMO MODE
+// ═══════════════════════════════════════════
+function startDemo() {
+  demoMode = true;
+  showMainApp('MUST 12V 100Ah · DEMO', 'demo');
+  simulateData();
+  demoInterval = setInterval(simulateData, 5000);
+}
+
+function simulateData() {
+  const d = DEMO_BAT.data;
+  d.soc     = Math.max(5, Math.min(100, d.soc + (Math.random()-0.52)*2));
+  d.consumo = Math.max(50, Math.min(500, d.consumo + (Math.random()-0.5)*30));
+  d.temp    = parseFloat((d.temp + (Math.random()-0.5)*0.4).toFixed(1));
+  d.voltaje = parseFloat((12.5 + (d.soc/100)*1.2).toFixed(2));
+  d.corriente = parseFloat(-(d.consumo/d.voltaje).toFixed(1));
+  const hrs = Math.max(0, (d.soc*1.28)/d.consumo);
+  const h = Math.floor(hrs), m = Math.round((hrs-h)*60);
+  d.autonomia = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+  d.status = d.corriente < 0 ? 'DESCARGANDO' : 'CARGANDO';
+  d.soc = Math.round(d.soc);
+  updateUI(d);
+}
+
+// ═══════════════════════════════════════════
 // QR SCANNER
-// ═══════════════════════════════════════
+// ═══════════════════════════════════════════
 async function startQrScan() {
   const overlay = document.getElementById('qr-overlay');
   const video   = document.getElementById('qr-video');
   overlay.classList.remove('hidden');
   try {
     qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-    video.srcObject = qrStream;
-    video.play();
-    // NOTE: Full QR decoding requires jsQR library or BarcodeDetector API
-    // For now, show the camera view. Actual decoding added once QR format is known.
+    video.srcObject = qrStream; video.play();
     if ('BarcodeDetector' in window) {
       const detector = new BarcodeDetector({ formats: ['qr_code'] });
-      const scanLoop = async () => {
+      const loop = async () => {
         if (!qrStream) return;
         try {
           const codes = await detector.detect(video);
-          if (codes.length > 0) {
-            handleQrResult(codes[0].rawValue);
-            return;
-          }
+          if (codes.length > 0) { handleQrResult(codes[0].rawValue); return; }
         } catch(e) {}
-        requestAnimationFrame(scanLoop);
+        requestAnimationFrame(loop);
       };
-      requestAnimationFrame(scanLoop);
+      requestAnimationFrame(loop);
     }
-  } catch(e) {
-    stopQrScan();
-    showConnectMsg('No se pudo acceder a la cámara.', true);
-  }
+  } catch(e) { stopQrScan(); showConnectMsg('No se pudo acceder a la cámara.', true); }
 }
 
 function stopQrScan() {
@@ -809,70 +981,91 @@ function stopQrScan() {
 function handleQrResult(raw) {
   stopQrScan();
   const mac = raw.match(/([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}/);
-  if (mac) {
-    showConnectMsg('MAC: ' + mac[0] + ' — ahora pulsa "Conectar por Bluetooth" para vincular.');
-  } else {
-    showConnectMsg('QR leído. Pulsa "Conectar por Bluetooth" para continuar.');
-  }
+  if (mac) showConnectMsg('MAC: ' + mac[0] + ' — pulsa "Conectar batería".');
+  else     showConnectMsg('QR leído. Pulsa "Conectar batería" para continuar.');
 }
 
-// ═══════════════════════════════════════
-// HELPERS
-// ═══════════════════════════════════════
+// ═══════════════════════════════════════════
+// SETTINGS TOGGLES
+// ═══════════════════════════════════════════
+function setToggle(id, on) {
+  const t = document.getElementById(id);
+  if (!t) return;
+  const knob = t.querySelector('div');
+  t.style.background   = on ? '#42e355' : '#353437';
+  knob.style.transform = on ? 'translateX(0)' : 'translateX(24px)';
+  knob.style.left      = on ? '2px' : 'auto';
+  knob.style.right     = on ? 'auto' : '2px';
+}
+
+function toggleAuto() {
+  autoRefresh = !autoRefresh;
+  setToggle('toggle-auto', autoRefresh);
+}
+
+function toggleChargeAlert() {
+  alertChargeComplete = !alertChargeComplete;
+  setToggle('toggle-charge', alertChargeComplete);
+}
+
+function toggleSeries() {
+  if (batteries.length < 2 && !demoMode) {
+    notify('Sin segunda batería', 'Conecta una segunda batería para usar modo serie.');
+    return;
+  }
+  seriesMode = !seriesMode;
+  setToggle('toggle-series', seriesMode);
+  updateBatTabs();
+  updateUI();
+}
+
+function setDischargePct(val) {
+  alertDischargePct = parseInt(val);
+  const lbl = document.getElementById('discharge-label');
+  if (lbl) lbl.textContent = val + '%';
+}
+
+// ═══════════════════════════════════════════
+// CONNECT / DISCONNECT
+// ═══════════════════════════════════════════
 function showConnectMsg(msg, isError) {
-  const el  = document.getElementById('connect-status');
+  const el = document.getElementById('connect-status');
   const txt = document.getElementById('connect-msg');
-  el.classList.remove('hidden');
-  txt.textContent = msg;
-  if (isError) txt.classList.add('text-error');
-  else         txt.classList.remove('text-error');
+  if (el) el.classList.remove('hidden');
+  if (txt) { txt.textContent = msg; txt.style.color = isError ? '#ffb4ab' : '#e4e2e4'; }
 }
 
 function hideConnectMsg() {
-  document.getElementById('connect-status').classList.add('hidden');
+  const el = document.getElementById('connect-status');
+  if (el) el.classList.add('hidden');
 }
 
 function disconnectDevice() {
-  if (btDevice && btDevice.gatt.connected) btDevice.gatt.disconnect();
+  batteries.forEach(b => {
+    saveSession(b);
+    if (b.poll) clearInterval(b.poll);
+    if (b.device && b.device.gatt.connected) b.device.gatt.disconnect();
+  });
+  batteries = [];
   if (demoInterval) clearInterval(demoInterval);
-  if (pollTimer) clearInterval(pollTimer);
-  btDevice = null; btTxChar = null; demoMode = false; demoInterval = null; pollTimer = null;
+  demoMode = false; demoInterval = null;
   document.getElementById('app-main').classList.add('hidden');
   document.getElementById('app-connect').style.display = '';
   hideConnectMsg();
 }
 
-function startPolling() {
-  if (!btTxChar) return;
-  const poll = () => {
-    if (!btTxChar) return;
-    btTxChar.writeValue(CMD_BASIC).catch(() => {});
-  };
-  poll(); // consulta inmediata al conectar
-  pollTimer = setInterval(poll, 10000); // cada 10 segundos
-}
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  setToggle('toggle-auto',    autoRefresh);
+  setToggle('toggle-charge',  alertChargeComplete);
+  setToggle('toggle-series',  false);
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+});
 
-function toggleAuto() {
-  autoRefresh = !autoRefresh;
-  const t = document.getElementById('toggle-auto');
-  const knob = t.querySelector('div');
-  t.classList.toggle('bg-secondary', autoRefresh);
-  t.classList.toggle('bg-surface-container-high', !autoRefresh);
-  knob.style.transform = autoRefresh ? '' : 'translateX(-24px)';
-}
-
-function toggleAlerts() {
-  alertsOn = !alertsOn;
-  const t = document.getElementById('toggle-alerts');
-  const knob = t.querySelector('div');
-  t.classList.toggle('bg-secondary', alertsOn);
-  t.classList.toggle('bg-surface-container-high', !alertsOn);
-  knob.style.transform = alertsOn ? '' : 'translateX(-24px)';
-}
-
-// ═══════════════════════════════════════
-// PWA
-// ═══════════════════════════════════════
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
