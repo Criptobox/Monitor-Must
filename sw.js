@@ -1,5 +1,6 @@
-const CACHE = 'must-monitor-v1';
-const ASSETS = ['/', '/index.html', '/manifest.json', '/icons/icon-192.svg', '/icons/icon-512.svg'];
+const CACHE = 'must-monitor-v2';
+const BASE = '/Monitor-Must';
+const ASSETS = [BASE+'/', BASE+'/index.html', BASE+'/manifest.json', BASE+'/icons/icon-192.svg', BASE+'/icons/icon-512.svg'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
@@ -15,6 +16,6 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match('/index.html')))
+    caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match(BASE+'/index.html')))
   );
 });
