@@ -549,87 +549,115 @@ switchTab('dashboard');
 // ═══════════════════════════════════════
 // CONNECTION
 // ═══════════════════════════════════════
+// JBD/Xiaoxiang BMS service + characteristics
+const JBD_SVC  = '0000ff00-0000-1000-8000-00805f9b34fb';
+const JBD_RX   = '0000ff01-0000-1000-8000-00805f9b34fb'; // notifications (BMS → phone)
+const JBD_TX   = '0000ff02-0000-1000-8000-00805f9b34fb'; // write (phone → BMS)
+let   btTxChar = null;
+let   pollTimer = null;
+// JBD commands
+const CMD_BASIC = new Uint8Array([0xDD, 0xA5, 0x03, 0x00, 0xFF, 0xFD, 0x77]);
+const CMD_CELLS = new Uint8Array([0xDD, 0xA5, 0x04, 0x00, 0xFF, 0xFC, 0x77]);
+
 async function connectBluetooth() {
   if (!navigator.bluetooth) {
-    showConnectMsg('Bluetooth no disponible en este navegador. Usa Chrome en Android.', true);
+    showConnectMsg('Bluetooth no disponible. Usa Chrome en Android (no funciona en iOS/Safari).', true);
     return;
   }
-  showConnectMsg('Buscando dispositivos MUST…');
+  showConnectMsg('Selecciona tu batería en la lista que aparecerá…');
   try {
     btDevice = await navigator.bluetooth.requestDevice({
-      // MUST / JBD BMS common service UUIDs
-      filters: [
-        { namePrefix: 'MUST' },
-        { namePrefix: 'JBD' },
-        { namePrefix: 'BT' },
-      ],
-      optionalServices: [
-        '0000ff00-0000-1000-8000-00805f9b34fb', // JBD BMS
-        '0000ffe0-0000-1000-8000-00805f9b34fb', // Generic BLE serial
-      ]
+      filters: [{ services: [JBD_SVC] }],
+      optionalServices: [JBD_SVC]
     });
-    showConnectMsg('Conectando a ' + btDevice.name + '…');
+    showConnectMsg('Conectando a ' + (btDevice.name || 'BMS') + '…');
     const server = await btDevice.gatt.connect();
-    showConnectMsg('Obteniendo servicios…');
-    // Try to get the data service
-    let service, rx;
-    const serviceUUIDs = ['0000ff00-0000-1000-8000-00805f9b34fb','0000ffe0-0000-1000-8000-00805f9b34fb'];
-    for (const uuid of serviceUUIDs) {
-      try { service = await server.getPrimaryService(uuid); break; } catch(e) {}
-    }
-    if (service) {
-      const chars = await service.getCharacteristics();
-      rx = chars[0]; // first characteristic for notifications
-      if (rx && rx.properties.notify) {
-        await rx.startNotifications();
-        rx.addEventListener('characteristicvaluechanged', onBtData);
-        btChar = rx;
-      }
-    }
+    const service = await server.getPrimaryService(JBD_SVC);
+    const rxChar  = await service.getCharacteristic(JBD_RX);
+    btTxChar      = await service.getCharacteristic(JBD_TX);
+    await rxChar.startNotifications();
+    rxChar.addEventListener('characteristicvaluechanged', onBtData);
     demoMode = false;
-    showMainApp(btDevice.name, btDevice.id);
+    showMainApp(btDevice.name || 'MUST BMS', btDevice.id);
     btDevice.addEventListener('gattserverdisconnected', onDisconnected);
-    if (autoRefresh) startPolling();
+    startPolling();
   } catch(err) {
     if (err.name === 'NotFoundError') {
-      showConnectMsg('No se encontraron dispositivos. Asegúrate de que la batería esté encendida y Bluetooth activo.');
-    } else if (err.name !== 'NotAllowedError') {
-      showConnectMsg('Error: ' + err.message, true);
-    } else {
+      showConnectMsg('No se encontró el BMS. Asegúrate de que la batería esté encendida.', true);
+    } else if (err.name === 'NotAllowedError') {
       hideConnectMsg();
+    } else {
+      showConnectMsg('Error: ' + err.message, true);
     }
   }
 }
 
+// Buffer para ensamblar respuestas fragmentadas
+let _buf = new Uint8Array(0);
+
 function onBtData(event) {
-  const value = event.target.value;
-  const bytes = new Uint8Array(value.buffer);
-  parseBmsData(bytes);
+  const chunk = new Uint8Array(event.target.value.buffer);
+  const merged = new Uint8Array(_buf.length + chunk.length);
+  merged.set(_buf); merged.set(chunk, _buf.length);
+  _buf = merged;
+  // Espera el byte de fin 0x77
+  if (_buf[_buf.length - 1] === 0x77) {
+    parseBmsData(_buf);
+    _buf = new Uint8Array(0);
+  }
 }
 
-function parseBmsData(bytes) {
-  // JBD BMS basic info response (0x03) parsing
-  // This is a placeholder — exact parsing depends on firmware version
-  // Full JBD protocol: https://github.com/fl4p/batmon-ha/blob/master/bmslib/protocol/jbd
+function parseBmsData(b) {
   try {
-    if (bytes[0] === 0xDD && bytes[1] === 0x03) {
-      const soc   = bytes[23];
-      const volts = ((bytes[4] << 8) | bytes[5]) / 100;
-      const amps  = ((bytes[6] << 8) | bytes[7]) / 100;
-      const temp  = (((bytes[27] << 8) | bytes[28]) - 2731) / 10;
-      const cycles = (bytes[12] << 8) | bytes[13];
-      updateUI({ soc, voltaje:volts, corriente:amps, temp, ciclos:cycles });
+    if (b[0] !== 0xDD) return;
+    if (b[1] === 0x03 && b[2] === 0x00) {
+      // Basic info response
+      const volts   = ((b[4] << 8) | b[5]) / 100;
+      const amps    = (((b[6] << 8) | b[7]) << 16 >> 16) / 100; // signed
+      const remain  = ((b[8] << 8) | b[9]) / 100;    // Ah restantes
+      const nominal = ((b[10] << 8) | b[11]) / 100;  // capacidad nominal
+      const cycles  = (b[12] << 8) | b[13];
+      const soc     = b[23];
+      const cells_n = b[25];
+      const temps_n = b[26];
+      // Temperatura (primera sonda)
+      const tempRaw = (b[27] << 8) | b[28];
+      const temp    = (tempRaw - 2731) / 10;
+      // Estado de carga
+      const status  = amps > 0.1 ? 'CARGANDO' : amps < -0.1 ? 'DESCARGANDO' : 'EN REPOSO';
+      const consumo = Math.abs(amps * volts);
+      const autonomia_h = amps < -0.1 ? (remain / Math.abs(amps)) : 0;
+      const h = Math.floor(autonomia_h);
+      const m = Math.round((autonomia_h - h) * 60);
+      const health = nominal > 0 ? Math.round((remain / nominal) * 100) : 98;
+      DEMO_DATA.soc = soc; DEMO_DATA.voltaje = volts; DEMO_DATA.corriente = amps.toFixed(1);
+      DEMO_DATA.temp = temp.toFixed(1); DEMO_DATA.ciclos = cycles;
+      DEMO_DATA.status = status; DEMO_DATA.consumo = Math.round(consumo);
+      DEMO_DATA.autonomia = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+      DEMO_DATA.health = health;
+      updateUI(DEMO_DATA);
+      // Pide voltajes de celdas a continuación
+      if (btTxChar) btTxChar.writeValue(CMD_CELLS).catch(() => {});
     }
-    if (bytes[0] === 0xDD && bytes[1] === 0x04) {
+    if (b[1] === 0x04 && b[2] === 0x00) {
+      // Cell voltages response
+      const n = (b[3]) / 2;
       const cells = [];
-      for (let i = 0; i < 4; i++) {
-        const v = ((bytes[4 + i*2] << 8) | bytes[5 + i*2]) / 1000;
-        cells.push({ id:`C_A1_0${i+1}`, v, balancing:false, pct:95 });
+      const vmin = 3.0, vmax = 3.65;
+      for (let i = 0; i < n; i++) {
+        const v = ((b[4 + i*2] << 8) | b[5 + i*2]) / 1000;
+        const pct = Math.round(Math.max(0, Math.min(100, (v - vmin) / (vmax - vmin) * 100)));
+        cells.push({ id:`C${i+1}`, v, balancing: false, pct });
       }
+      // Detectar balanceo: celda con mayor voltaje relativo
+      const vavg = cells.reduce((s,c) => s + c.v, 0) / cells.length;
+      cells.forEach(c => { c.balancing = c.v > vavg + 0.002; });
+      const delta = (Math.max(...cells.map(c=>c.v)) - Math.min(...cells.map(c=>c.v))).toFixed(3);
       DEMO_DATA.cells = cells;
+      DEMO_DATA.deltaMax = delta + 'V';
       renderCells();
     }
-  } catch(e) {}
+  } catch(e) { console.error('parseBmsData', e); }
 }
 
 function onDisconnected() {
@@ -780,10 +808,12 @@ function stopQrScan() {
 
 function handleQrResult(raw) {
   stopQrScan();
-  // QR format from MUST battery not yet confirmed
-  // Once known, parse device name/MAC and connect directly
-  showConnectMsg('QR leído: ' + raw.substring(0, 30) + '…');
-  // TODO: parse raw and call connectBluetooth() with device filter
+  const mac = raw.match(/([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}/);
+  if (mac) {
+    showConnectMsg('MAC: ' + mac[0] + ' — ahora pulsa "Conectar por Bluetooth" para vincular.');
+  } else {
+    showConnectMsg('QR leído. Pulsa "Conectar por Bluetooth" para continuar.');
+  }
 }
 
 // ═══════════════════════════════════════
@@ -805,19 +835,21 @@ function hideConnectMsg() {
 function disconnectDevice() {
   if (btDevice && btDevice.gatt.connected) btDevice.gatt.disconnect();
   if (demoInterval) clearInterval(demoInterval);
-  btDevice = null; demoMode = false; demoInterval = null;
+  if (pollTimer) clearInterval(pollTimer);
+  btDevice = null; btTxChar = null; demoMode = false; demoInterval = null; pollTimer = null;
   document.getElementById('app-main').classList.add('hidden');
   document.getElementById('app-connect').style.display = '';
   hideConnectMsg();
 }
 
 function startPolling() {
-  // Periodic BMS data request for JBD protocol
-  if (!btChar) return;
-  setInterval(() => {
-    const cmd = new Uint8Array([0xDD, 0xA5, 0x03, 0x00, 0xFF, 0xFD, 0x77]);
-    btChar.writeValue(cmd).catch(() => {});
-  }, 30000);
+  if (!btTxChar) return;
+  const poll = () => {
+    if (!btTxChar) return;
+    btTxChar.writeValue(CMD_BASIC).catch(() => {});
+  };
+  poll(); // consulta inmediata al conectar
+  pollTimer = setInterval(poll, 10000); // cada 10 segundos
 }
 
 function toggleAuto() {
