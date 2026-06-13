@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html class="dark" lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="theme-color" content="#131315"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="MUST Monitor"/>
+<title>MUST Monitor</title>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icons/icon-192.svg"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+tailwind.config = {
+  darkMode: "class",
+  theme: { extend: { colors: {
+    "surface": "#131315", "surface-dim": "#131315",
+    "surface-container": "#1f1f21", "surface-container-low": "#1b1b1d",
+    "surface-container-high": "#2a2a2c", "surface-container-highest": "#353437",
+    "surface-variant": "#353437", "surface-bright": "#39393b",
+    "on-surface": "#e4e2e4", "on-surface-variant": "#c1c6d7",
+    "on-background": "#e4e2e4", "background": "#131315",
+    "primary": "#adc6ff", "on-primary": "#002e69",
+    "primary-container": "#4b8eff", "on-primary-container": "#00285c",
+    "secondary": "#42e355", "on-secondary": "#00390a",
+    "secondary-container": "#04c339", "on-secondary-container": "#00480f",
+    "tertiary": "#ffb868", "on-tertiary": "#482900",
+    "tertiary-container": "#ce7f00",
+    "outline": "#8b90a0", "outline-variant": "#414755",
+    "error": "#ffb4ab", "error-container": "#93000a",
+  }, fontFamily: {
+    "display-data": ["Inter"], "body-lg": ["Inter"], "body-md": ["Inter"],
+    "headline-lg": ["Inter"], "headline-md": ["Inter"],
+    "label-caps": ["Inter"], "mono-data": ["JetBrains Mono"],
+  }, fontSize: {
+    "display-data": ["48px", {lineHeight:"56px",letterSpacing:"-0.02em",fontWeight:"700"}],
+    "headline-lg": ["24px", {lineHeight:"32px",fontWeight:"600"}],
+    "headline-md": ["20px", {lineHeight:"28px",fontWeight:"600"}],
+    "body-lg": ["16px", {lineHeight:"24px",fontWeight:"400"}],
+    "body-md": ["14px", {lineHeight:"20px",fontWeight:"400"}],
+    "label-caps": ["12px", {lineHeight:"16px",letterSpacing:"0.05em",fontWeight:"700"}],
+    "mono-data": ["14px", {lineHeight:"20px",fontWeight:"500"}],
+  }, spacing: {
+    "xs":"4px","sm":"8px","md":"16px","lg":"24px","xl":"32px",
+    "container-padding":"16px","card-gap":"12px",
+  }}}
+}
+</script>
+<style>
+  :root { --secondary-glow: rgba(66,227,85,0.2); --primary-glow: rgba(173,198,255,0.15); }
+  body { background:#131315; -webkit-tap-highlight-color:transparent; overflow-x:hidden; min-height:100dvh; }
+  .glass-card { background:rgba(22,22,24,0.8); backdrop-filter:blur(12px); border:1px solid #2C2C2E; }
+  .cell-card { background:rgba(22,22,24,0.9); border:1px solid #2C2C2E; }
+  .glow-secondary { box-shadow:0 0 20px var(--secondary-glow); }
+  .glow-primary { box-shadow:0 0 20px var(--primary-glow); }
+  @keyframes pulse-slow { 0%,100%{opacity:1} 50%{opacity:0.7} }
+  .animate-pulse-slow { animation:pulse-slow 3s infinite ease-in-out; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  .page-transition { animation:fadeIn 0.25s ease-out; }
+  @keyframes shimmer { 0%{background-position:-200px 0} 100%{background-position:200px 0} }
+  .shimmer { background:linear-gradient(90deg,#42e355 0%,#70ff76 50%,#42e355 100%); background-size:400px 100%; animation:shimmer 2s infinite; }
+  /* Chart */
+  @keyframes drawLine { from{stroke-dashoffset:1000} to{stroke-dashoffset:0} }
+  @keyframes fillArea { from{opacity:0} to{opacity:0.15} }
+  .spark-line { fill:none; stroke:#adc6ff; stroke-width:2; stroke-dasharray:1000; animation:drawLine 2s ease-out forwards; }
+  .spark-area { fill:url(#gradient); animation:fillArea 2s ease-out forwards; }
+  @keyframes pulse-point { 0%,100%{r:5;opacity:1} 50%{r:8;opacity:0.6} }
+  .pulsing-point circle { animation:pulse-point 2s infinite ease-in-out; }
+  /* Slide up items */
+  @keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+  .slide-up-item { animation:slideUp 0.4s ease-out both; }
+  /* SOC circle */
+  .soc-ring { stroke-dasharray:440; transition:stroke-dashoffset 1.5s cubic-bezier(0.4,0,0.2,1); }
+  /* BT scanning pulse */
+  @keyframes ping { 0%{transform:scale(1);opacity:0.8} 100%{transform:scale(2);opacity:0} }
+  .bt-ping { animation:ping 1.5s cubic-bezier(0,0,0.2,1) infinite; }
+  /* Screen transitions */
+  .screen { display:none; }
+  .screen.active { display:block; animation:fadeIn 0.25s ease-out; }
+  /* Safe area padding for iOS */
+  .pb-safe { padding-bottom:env(safe-area-inset-bottom, 16px); }
+</style>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased">
+
+<!-- ═══════════════════════════════════════════
+     CONNECT SCREEN
+═══════════════════════════════════════════ -->
+<div id="app-connect" class="min-h-screen flex flex-col">
+  <div class="flex-1 flex flex-col items-center justify-center px-8 py-16 text-center">
+    <!-- Icon -->
+    <div class="relative mb-8">
+      <div class="w-24 h-24 rounded-3xl bg-surface-container flex items-center justify-center">
+        <span class="material-symbols-outlined text-secondary" style="font-size:48px;font-variation-settings:'FILL' 1;">battery_charging_full</span>
+      </div>
+      <div class="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-surface-container border-2 border-background flex items-center justify-center">
+        <span class="material-symbols-outlined text-primary" style="font-size:14px;">bluetooth</span>
+      </div>
+    </div>
+    <h1 class="font-headline-lg text-headline-lg text-on-surface mb-2">MUST Monitor</h1>
+    <p class="font-body-md text-body-md text-on-surface-variant mb-12">Conecta tu batería LiFePO4 vía Bluetooth para ver el estado en tiempo real.</p>
+
+    <!-- Connect button -->
+    <button id="btn-connect-bt" onclick="connectBluetooth()"
+      class="w-full h-14 bg-secondary text-on-secondary font-headline-md text-headline-md rounded-xl active:scale-95 transition-all duration-200 flex items-center justify-center gap-3 shadow-lg shadow-secondary/20 glow-secondary mb-4">
+      <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">bluetooth_searching</span>
+      Conectar por Bluetooth
+    </button>
+
+    <!-- QR button -->
+    <button onclick="startQrScan()"
+      class="w-full h-14 bg-surface-container text-on-surface font-headline-md text-headline-md rounded-xl active:scale-95 transition-all duration-200 flex items-center justify-center gap-3 border border-outline-variant mb-8">
+      <span class="material-symbols-outlined">qr_code_scanner</span>
+      Escanear código QR
+    </button>
+
+    <!-- Demo mode -->
+    <button onclick="startDemo()"
+      class="text-on-surface-variant font-label-caps text-label-caps underline underline-offset-2">
+      Continuar en modo demo
+    </button>
+  </div>
+
+  <!-- Status message -->
+  <div id="connect-status" class="hidden px-6 pb-8">
+    <div class="glass-card rounded-xl p-4 flex items-center gap-3">
+      <div class="relative flex-shrink-0">
+        <div class="w-3 h-3 rounded-full bg-primary bt-ping absolute inset-0"></div>
+        <div class="w-3 h-3 rounded-full bg-primary relative"></div>
+      </div>
+      <span id="connect-msg" class="font-body-md text-body-md text-on-surface">Buscando dispositivos…</span>
+    </div>
+  </div>
+
+  <!-- QR Scanner overlay -->
+  <div id="qr-overlay" class="hidden fixed inset-0 bg-black/90 z-50 flex flex-col items-center justify-center p-8">
+    <div class="w-full max-w-sm">
+      <div class="relative bg-surface-container rounded-2xl overflow-hidden aspect-square mb-6 flex items-center justify-center border-2 border-secondary/30">
+        <video id="qr-video" class="w-full h-full object-cover" playsinline></video>
+        <!-- Scan frame -->
+        <div class="absolute inset-8 border-2 border-secondary rounded-xl opacity-70 pointer-events-none"></div>
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div class="w-2/3 h-0.5 bg-secondary/60 animate-pulse-slow"></div>
+        </div>
+      </div>
+      <p class="text-center font-body-md text-on-surface-variant mb-6">Apunta al código QR de la batería</p>
+      <button onclick="stopQrScan()" class="w-full h-12 bg-surface-container-high rounded-xl font-headline-md text-on-surface-variant">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MAIN APP
+═══════════════════════════════════════════ -->
+<div id="app-main" class="hidden min-h-screen flex flex-col">
+
+  <!-- App Bar -->
+  <header class="w-full sticky top-0 bg-surface-dim border-b border-surface-variant flex justify-between items-center px-container-padding h-14 z-40">
+    <div class="flex items-center gap-2">
+      <span class="material-symbols-outlined text-primary" style="font-variation-settings:'FILL' 1;">battery_charging_full</span>
+      <h1 id="device-name" class="font-headline-md text-headline-md text-primary">MUST 12V 100Ah</h1>
+    </div>
+    <div class="flex items-center gap-4">
+      <span id="bt-icon" class="material-symbols-outlined text-secondary cursor-pointer" onclick="disconnectDevice()" style="font-variation-settings:'FILL' 1;" title="Conectado — toca para desconectar">bluetooth_connected</span>
+      <span id="demo-badge" class="hidden font-label-caps text-label-caps bg-tertiary-container text-on-tertiary px-2 py-0.5 rounded-full">DEMO</span>
+      <span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+    </div>
+  </header>
+
+  <!-- Screens container -->
+  <main class="flex-1 pb-24">
+
+    <!-- ── DASHBOARD ── -->
+    <section id="screen-dashboard" class="screen active">
+      <!-- Hero SoC -->
+      <div class="flex flex-col items-center justify-center pt-8 pb-8 relative">
+        <div class="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none">
+          <div class="w-64 h-64 bg-primary rounded-full blur-[100px]"></div>
+        </div>
+        <div class="relative w-56 h-56">
+          <svg class="w-full h-full" viewBox="0 0 256 256">
+            <circle class="text-surface-container-highest" cx="128" cy="128" r="100" fill="transparent" stroke="currentColor" stroke-width="14"/>
+            <circle id="soc-ring" class="text-secondary soc-ring" cx="128" cy="128" r="100" fill="transparent" stroke="currentColor" stroke-width="14" stroke-linecap="round"
+              style="transform:rotate(-90deg);transform-origin:128px 128px;stroke-dashoffset:calc(628 - (628 * 85) / 100);stroke-dasharray:628"/>
+          </svg>
+          <div class="absolute inset-0 flex flex-col items-center justify-center">
+            <span id="soc-value" class="font-display-data text-display-data text-on-surface">85<span class="text-headline-md font-headline-md text-on-surface-variant">%</span></span>
+            <span id="soc-status" class="font-label-caps text-label-caps text-secondary uppercase tracking-widest mt-1">Descargando</span>
+          </div>
+        </div>
+        <div class="mt-6 flex items-center gap-4">
+          <div class="flex items-center gap-2 px-4 py-2 bg-secondary-container/10 border border-secondary/20 rounded-full">
+            <div class="w-2 h-2 rounded-full bg-secondary animate-pulse"></div>
+            <span id="system-status" class="font-label-caps text-label-caps text-secondary">SISTEMA OK</span>
+          </div>
+          <div id="eco-badge" class="flex items-center gap-2 px-4 py-2 bg-primary-container/10 border border-primary/20 rounded-full">
+            <span class="material-symbols-outlined text-primary text-[16px]">bolt</span>
+            <span class="font-label-caps text-label-caps text-primary">MODO ECO</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metrics grid -->
+      <div class="px-container-padding grid grid-cols-2 gap-card-gap">
+        <div class="glass-card rounded-xl p-4 flex flex-col gap-2 transition-transform active:scale-[0.98]">
+          <div class="flex justify-between items-start">
+            <span class="font-label-caps text-label-caps text-on-surface-variant">CONSUMO</span>
+            <span class="material-symbols-outlined text-on-surface-variant text-[18px]">electric_bolt</span>
+          </div>
+          <div class="flex items-baseline gap-1 mt-2">
+            <span id="consumo-value" class="font-display-data text-[28px] leading-none text-on-surface">142</span>
+            <span class="font-headline-md text-[16px] text-on-surface-variant">W</span>
+          </div>
+          <div class="w-full h-1 bg-surface-container-highest rounded-full mt-2 overflow-hidden">
+            <div id="consumo-bar" class="h-full bg-primary rounded-full transition-all duration-700" style="width:35%"></div>
+          </div>
+        </div>
+        <div class="glass-card rounded-xl p-4 flex flex-col gap-2 transition-transform active:scale-[0.98]">
+          <div class="flex justify-between items-start">
+            <span class="font-label-caps text-label-caps text-on-surface-variant">AUTONOMÍA</span>
+            <span class="material-symbols-outlined text-on-surface-variant text-[18px]">schedule</span>
+          </div>
+          <div class="flex items-baseline gap-1 mt-2">
+            <span id="autonomia-value" class="font-display-data text-[28px] leading-none text-on-surface">08:45</span>
+            <span class="font-headline-md text-[16px] text-on-surface-variant">H</span>
+          </div>
+          <p id="carga-eta" class="font-label-caps text-label-caps text-on-surface-variant/60 mt-1">Carga al 100% en 2h</p>
+        </div>
+        <div class="glass-card rounded-xl p-4 flex flex-col gap-2 col-span-2 relative overflow-hidden transition-transform active:scale-[0.99]">
+          <div class="relative z-10">
+            <div class="flex justify-between items-start">
+              <span class="font-label-caps text-label-caps text-on-surface-variant">SALUD DE LA BATERÍA</span>
+              <span class="material-symbols-outlined text-secondary text-[18px]" style="font-variation-settings:'FILL' 1;">favorite</span>
+            </div>
+            <div class="flex items-center justify-between mt-2">
+              <div class="flex items-baseline gap-1">
+                <span id="health-value" class="font-display-data text-[32px] leading-none text-on-surface">98.4</span>
+                <span class="font-headline-md text-[18px] text-on-surface-variant">%</span>
+              </div>
+              <div id="health-badge" class="px-3 py-1 bg-secondary-container text-on-secondary-container font-label-caps text-label-caps rounded-lg">EXCELENTE</div>
+            </div>
+          </div>
+          <div class="absolute bottom-0 left-0 w-full h-12 opacity-20 pointer-events-none">
+            <svg class="w-full h-full" viewBox="0 0 400 100" preserveAspectRatio="none">
+              <path d="M0,80 Q50,70 100,75 T200,60 T300,65 T400,50 L400,100 L0,100 Z" fill="#42e355"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick info -->
+      <section class="px-container-padding mt-6 space-y-2">
+        <div class="flex justify-between items-center py-3 border-b border-surface-variant/50 px-2 rounded-lg">
+          <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-on-surface-variant">thermostat</span>
+            <span class="text-on-surface font-body-lg">Temperatura</span>
+          </div>
+          <span id="temp-value" class="font-mono-data text-mono-data text-on-surface">24.5°C</span>
+        </div>
+        <div class="flex justify-between items-center py-3 border-b border-surface-variant/50 px-2 rounded-lg">
+          <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-on-surface-variant">rebase_edit</span>
+            <span class="text-on-surface font-body-lg">Ciclos de carga</span>
+          </div>
+          <span id="ciclos-value" class="font-mono-data text-mono-data text-on-surface">124</span>
+        </div>
+        <div class="flex justify-between items-center py-3 border-b border-surface-variant/50 px-2 rounded-lg">
+          <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-on-surface-variant">flash_on</span>
+            <span class="text-on-surface font-body-lg">Voltaje Total</span>
+          </div>
+          <span id="voltaje-value" class="font-mono-data text-mono-data text-secondary">13.24V</span>
+        </div>
+        <div class="flex justify-between items-center py-3 px-2 rounded-lg">
+          <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-on-surface-variant">electrical_services</span>
+            <span class="text-on-surface font-body-lg">Corriente</span>
+          </div>
+          <span id="corriente-value" class="font-mono-data text-mono-data text-on-surface">-11.2A</span>
+        </div>
+      </section>
+    </section>
+
+    <!-- ── CELLS ── -->
+    <section id="screen-cells" class="screen px-container-padding pt-6 max-w-md mx-auto w-full">
+      <div class="mb-6 flex items-center justify-between cell-card rounded-xl p-4 glow-secondary">
+        <div>
+          <span class="font-label-caps text-label-caps text-on-surface-variant mb-1 uppercase block">TEMPERATURA GLOBAL</span>
+          <div class="flex items-baseline gap-1">
+            <span id="cell-temp" class="font-headline-lg text-headline-lg text-secondary">24.5</span>
+            <span class="font-headline-md text-secondary">°C</span>
+          </div>
+        </div>
+        <div class="h-12 w-12 rounded-full bg-secondary-container/20 flex items-center justify-center">
+          <span class="material-symbols-outlined text-secondary" style="font-variation-settings:'FILL' 1;">thermostat</span>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3 mb-6">
+        <div class="cell-card rounded-xl p-3 flex flex-col items-center justify-center text-center">
+          <span class="font-label-caps text-label-caps text-on-surface-variant mb-1">DELTA MAX</span>
+          <span id="delta-max" class="font-mono-data text-mono-data text-primary">0.004V</span>
+        </div>
+        <div class="cell-card rounded-xl p-3 flex flex-col items-center justify-center text-center">
+          <span class="font-label-caps text-label-caps text-on-surface-variant mb-1">ESTADO BMS</span>
+          <span id="bms-status" class="font-label-caps text-[10px] text-on-secondary-container bg-secondary-container px-2 py-0.5 rounded-full">BALANCEANDO</span>
+        </div>
+      </div>
+      <h2 class="font-label-caps text-label-caps text-on-surface-variant px-1 mb-3">DETALLE DE CELDAS (LFP 4S)</h2>
+      <div id="cells-list" class="flex flex-col gap-card-gap pb-4">
+        <!-- Cells rendered by JS -->
+      </div>
+      <div class="mt-4 cell-card rounded-xl p-4 border-l-4 border-l-secondary bg-secondary-container/5">
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-secondary">verified_user</span>
+          <p id="bms-msg" class="font-body-md text-on-surface">Todos los sistemas operativos. El balanceado de celdas está optimizando la longevidad del pack.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── HISTORY ── -->
+    <section id="screen-history" class="screen px-container-padding py-6 space-y-6 max-w-2xl mx-auto">
+      <div class="flex items-end justify-between slide-up-item">
+        <div>
+          <p class="font-label-caps text-label-caps text-on-surface-variant mb-1">CONSUMO TOTAL</p>
+          <div class="flex items-baseline gap-2">
+            <span id="hist-total" class="font-display-data text-display-data text-primary">1,280</span>
+            <span class="font-headline-md text-on-surface-variant">Watts</span>
+          </div>
+        </div>
+        <div class="bg-secondary-container/20 text-secondary px-3 py-1 rounded-full flex items-center gap-1">
+          <span class="material-symbols-outlined text-[16px]">trending_down</span>
+          <span class="font-label-caps text-label-caps">12% VS AYER</span>
+        </div>
+      </div>
+      <!-- Chart -->
+      <div class="glass-card rounded-xl p-4 overflow-hidden slide-up-item">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-label-caps text-label-caps text-on-surface-variant">CONSUMO (W) — ÚLTIMAS 24H</h3>
+          <div class="flex items-center gap-1">
+            <div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+            <span class="text-[10px] font-label-caps text-on-surface-variant">ACTUAL</span>
+          </div>
+        </div>
+        <div class="h-40 w-full">
+          <svg class="w-full h-full" viewBox="0 0 400 160" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:#adc6ff;stop-opacity:0.8"/>
+                <stop offset="100%" style="stop-color:#adc6ff;stop-opacity:0"/>
+              </linearGradient>
+            </defs>
+            <line stroke="#2c2c2e" stroke-dasharray="4" stroke-width="1" x1="0" y1="32" x2="400" y2="32"/>
+            <line stroke="#2c2c2e" stroke-dasharray="4" stroke-width="1" x1="0" y1="80" x2="400" y2="80"/>
+            <line stroke="#2c2c2e" stroke-dasharray="4" stroke-width="1" x1="0" y1="128" x2="400" y2="128"/>
+            <path class="spark-area" d="M0,144 L20,132 L40,136 L60,112 L80,116 L100,88 L120,96 L140,64 L160,68 L180,48 L200,52 L220,40 L240,56 L260,72 L280,104 L300,96 L320,120 L340,112 L360,136 L380,128 L400,148 V160 H0 Z"/>
+            <path class="spark-line" d="M0,144 L20,132 L40,136 L60,112 L80,116 L100,88 L120,96 L140,64 L160,68 L180,48 L200,52 L220,40 L240,56 L260,72 L280,104 L300,96 L320,120 L340,112 L360,136 L380,128 L400,148"/>
+            <g class="pulsing-point">
+              <circle cx="220" cy="40" r="5" fill="#adc6ff" stroke="#131315" stroke-width="2"/>
+            </g>
+          </svg>
+        </div>
+        <div class="flex justify-between mt-2">
+          <span class="font-mono-data text-mono-data text-on-surface-variant text-[10px]">00:00</span>
+          <span class="font-mono-data text-mono-data text-on-surface-variant text-[10px]">06:00</span>
+          <span class="font-mono-data text-mono-data text-on-surface-variant text-[10px]">12:00</span>
+          <span class="font-mono-data text-mono-data text-on-surface-variant text-[10px]">18:00</span>
+          <span class="font-mono-data text-mono-data text-on-surface-variant text-[10px]">AHORA</span>
+        </div>
+      </div>
+      <!-- Stats bento -->
+      <div class="grid grid-cols-2 gap-card-gap slide-up-item">
+        <div class="glass-card rounded-xl p-4 flex flex-col justify-between">
+          <div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center mb-3">
+            <span class="material-symbols-outlined text-primary">update</span>
+          </div>
+          <p class="font-label-caps text-label-caps text-on-surface-variant mb-2">CICLOS TOTALES</p>
+          <p id="hist-ciclos" class="font-display-data text-[32px] text-on-surface leading-tight">412</p>
+          <p id="hist-salud" class="font-mono-data text-mono-data text-secondary">Salud: 98%</p>
+        </div>
+        <div class="glass-card rounded-xl p-4 flex flex-col justify-between">
+          <div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center mb-3">
+            <span class="material-symbols-outlined text-primary">bolt</span>
+          </div>
+          <p class="font-label-caps text-label-caps text-on-surface-variant mb-2">ENERGÍA HOY</p>
+          <p id="hist-energia" class="font-display-data text-[32px] text-on-surface leading-tight">8.4</p>
+          <p class="font-mono-data text-mono-data text-on-surface-variant">kWh</p>
+        </div>
+        <div class="glass-card rounded-xl p-4 col-span-2 flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center">
+              <span class="material-symbols-outlined text-tertiary">leaderboard</span>
+            </div>
+            <div>
+              <p class="font-label-caps text-label-caps text-on-surface-variant">PICO DE CONSUMO</p>
+              <p id="hist-pico" class="font-headline-md text-headline-md text-on-surface">2,450 W</p>
+            </div>
+          </div>
+          <div class="text-right">
+            <p class="font-mono-data text-mono-data text-on-surface-variant text-xs">Registrado a las</p>
+            <p id="hist-pico-hora" class="font-mono-data text-mono-data text-primary">14:22 PM</p>
+          </div>
+        </div>
+      </div>
+      <!-- Detail list -->
+      <div class="glass-card rounded-xl divide-y divide-surface-variant overflow-hidden slide-up-item">
+        <div class="p-4 flex justify-between items-center">
+          <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-on-surface-variant">thermostat</span>
+            <span class="font-body-md text-on-surface">Temperatura Máxima</span>
+          </div>
+          <span id="hist-temp-max" class="font-mono-data text-mono-data text-on-surface">32.4°C</span>
+        </div>
+        <div class="p-4 flex justify-between items-center">
+          <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-on-surface-variant">battery_profile</span>
+            <span class="font-body-md text-on-surface">Voltaje Mínimo</span>
+          </div>
+          <span id="hist-volt-min" class="font-mono-data text-mono-data text-on-surface">12.1V</span>
+        </div>
+        <div class="p-4 flex justify-between items-center">
+          <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-on-surface-variant">avg_pace</span>
+            <span class="font-body-md text-on-surface">Promedio Diario</span>
+          </div>
+          <span id="hist-prom" class="font-mono-data text-mono-data text-on-surface">640W</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SETTINGS ── -->
+    <section id="screen-settings" class="screen px-container-padding pt-6 pb-8 max-w-md mx-auto">
+      <h2 class="font-headline-lg text-headline-lg text-on-surface mb-6">Configuración</h2>
+      <!-- Device info -->
+      <div class="glass-card rounded-xl p-4 mb-4">
+        <p class="font-label-caps text-label-caps text-on-surface-variant mb-3">DISPOSITIVO</p>
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-secondary-container/20 flex items-center justify-center">
+            <span class="material-symbols-outlined text-secondary" style="font-variation-settings:'FILL' 1;">battery_charging_full</span>
+          </div>
+          <div>
+            <p id="settings-device-name" class="font-headline-md text-on-surface">MUST 12V 100Ah</p>
+            <p id="settings-device-id" class="font-mono-data text-mono-data text-on-surface-variant text-xs">Modo demo</p>
+          </div>
+        </div>
+        <button onclick="disconnectDevice()"
+          class="w-full mt-4 h-10 bg-error-container/30 text-error font-label-caps text-label-caps rounded-lg flex items-center justify-center gap-2 active:scale-95 transition-transform">
+          <span class="material-symbols-outlined text-[16px]">bluetooth_disabled</span>
+          Desconectar
+        </button>
+      </div>
+      <!-- Options -->
+      <div class="glass-card rounded-xl divide-y divide-surface-variant overflow-hidden mb-4">
+        <div class="p-4 flex justify-between items-center">
+          <span class="font-body-lg text-on-surface">Actualización automática</span>
+          <div id="toggle-auto" onclick="toggleAuto()" class="w-12 h-6 bg-secondary rounded-full relative cursor-pointer transition-colors">
+            <div class="w-5 h-5 bg-white rounded-full absolute top-0.5 right-0.5 transition-transform shadow-sm"></div>
+          </div>
+        </div>
+        <div class="p-4 flex justify-between items-center">
+          <span class="font-body-lg text-on-surface">Alertas de voltaje bajo</span>
+          <div id="toggle-alerts" onclick="toggleAlerts()" class="w-12 h-6 bg-secondary rounded-full relative cursor-pointer transition-colors">
+            <div class="w-5 h-5 bg-white rounded-full absolute top-0.5 right-0.5 transition-transform shadow-sm"></div>
+          </div>
+        </div>
+        <div class="p-4 flex justify-between items-center">
+          <span class="font-body-lg text-on-surface">Intervalo de actualización</span>
+          <select class="bg-surface-container text-on-surface font-mono-data text-mono-data rounded-lg px-2 py-1 border border-outline-variant">
+            <option>5s</option><option>10s</option><option selected>30s</option><option>60s</option>
+          </select>
+        </div>
+      </div>
+      <!-- About -->
+      <div class="glass-card rounded-xl p-4 text-center">
+        <p class="font-label-caps text-label-caps text-on-surface-variant mb-1">MUST MONITOR</p>
+        <p class="font-mono-data text-mono-data text-on-surface-variant text-xs">v1.0.0 · LiFePO4 BLE</p>
+      </div>
+    </section>
+
+  </main><!-- /main -->
+
+  <!-- Bottom Nav -->
+  <nav class="fixed bottom-0 left-0 w-full bg-surface-container border-t border-surface-variant flex justify-around items-center px-4 py-2 pb-safe z-50 shadow-lg">
+    <button class="nav-btn flex flex-col items-center justify-center px-3 py-1 rounded-xl active:scale-90 transition-all duration-200" data-tab="dashboard" onclick="switchTab('dashboard')">
+      <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">dashboard</span>
+      <span class="font-label-caps text-label-caps mt-0.5">Dashboard</span>
+    </button>
+    <button class="nav-btn flex flex-col items-center justify-center px-3 py-1 rounded-xl active:scale-90 transition-all duration-200" data-tab="cells" onclick="switchTab('cells')">
+      <span class="material-symbols-outlined">battery_5_bar</span>
+      <span class="font-label-caps text-label-caps mt-0.5">Cells</span>
+    </button>
+    <button class="nav-btn flex flex-col items-center justify-center px-3 py-1 rounded-xl active:scale-90 transition-all duration-200" data-tab="history" onclick="switchTab('history')">
+      <span class="material-symbols-outlined">insights</span>
+      <span class="font-label-caps text-label-caps mt-0.5">History</span>
+    </button>
+    <button class="nav-btn flex flex-col items-center justify-center px-3 py-1 rounded-xl active:scale-90 transition-all duration-200" data-tab="settings" onclick="switchTab('settings')">
+      <span class="material-symbols-outlined">settings</span>
+      <span class="font-label-caps text-label-caps mt-0.5">Settings</span>
+    </button>
+  </nav>
+
+</div><!-- /app-main -->
+
+<script>
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let btDevice = null;
+let btChar   = null;
+let demoMode = false;
+let demoInterval = null;
+let autoRefresh  = true;
+let alertsOn     = true;
+let qrStream     = null;
+
+const DEMO_DATA = {
+  soc: 85, status: 'DESCARGANDO', systemOk: true,
+  consumo: 142, autonomia: '08:45', cargaEta: 'Carga al 100% en 2h',
+  health: 98.4, temp: 24.5, ciclos: 124, voltaje: 13.24, corriente: -11.2,
+  cells: [
+    { id:'C_A1_01', v:3.325, balancing:true,  pct:92 },
+    { id:'C_A1_02', v:3.321, balancing:false, pct:98 },
+    { id:'C_A1_03', v:3.324, balancing:true,  pct:85 },
+    { id:'C_A1_04', v:3.322, balancing:false, pct:95 },
+  ],
+  bmsStatus: 'BALANCEANDO', deltaMax: '0.004V',
+};
+
+// ═══════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════
+function switchTab(tab) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + tab).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    const active = b.dataset.tab === tab;
+    b.classList.toggle('bg-secondary-container', active);
+    b.classList.toggle('text-on-secondary-container', active);
+    b.classList.toggle('text-on-surface-variant', !active);
+  });
+  if (tab === 'cells') renderCells();
+}
+
+// Set initial active nav
+switchTab('dashboard');
+
+// ═══════════════════════════════════════
+// CONNECTION
+// ═══════════════════════════════════════
+async function connectBluetooth() {
+  if (!navigator.bluetooth) {
+    showConnectMsg('Bluetooth no disponible en este navegador. Usa Chrome en Android.', true);
+    return;
+  }
+  showConnectMsg('Buscando dispositivos MUST…');
+  try {
+    btDevice = await navigator.bluetooth.requestDevice({
+      // MUST / JBD BMS common service UUIDs
+      filters: [
+        { namePrefix: 'MUST' },
+        { namePrefix: 'JBD' },
+        { namePrefix: 'BT' },
+      ],
+      optionalServices: [
+        '0000ff00-0000-1000-8000-00805f9b34fb', // JBD BMS
+        '0000ffe0-0000-1000-8000-00805f9b34fb', // Generic BLE serial
+      ]
+    });
+    showConnectMsg('Conectando a ' + btDevice.name + '…');
+    const server = await btDevice.gatt.connect();
+    showConnectMsg('Obteniendo servicios…');
+    // Try to get the data service
+    let service, rx;
+    const serviceUUIDs = ['0000ff00-0000-1000-8000-00805f9b34fb','0000ffe0-0000-1000-8000-00805f9b34fb'];
+    for (const uuid of serviceUUIDs) {
+      try { service = await server.getPrimaryService(uuid); break; } catch(e) {}
+    }
+    if (service) {
+      const chars = await service.getCharacteristics();
+      rx = chars[0]; // first characteristic for notifications
+      if (rx && rx.properties.notify) {
+        await rx.startNotifications();
+        rx.addEventListener('characteristicvaluechanged', onBtData);
+        btChar = rx;
+      }
+    }
+    demoMode = false;
+    showMainApp(btDevice.name, btDevice.id);
+    btDevice.addEventListener('gattserverdisconnected', onDisconnected);
+    if (autoRefresh) startPolling();
+  } catch(err) {
+    if (err.name === 'NotFoundError') {
+      showConnectMsg('No se encontraron dispositivos. Asegúrate de que la batería esté encendida y Bluetooth activo.');
+    } else if (err.name !== 'NotAllowedError') {
+      showConnectMsg('Error: ' + err.message, true);
+    } else {
+      hideConnectMsg();
+    }
+  }
+}
+
+function onBtData(event) {
+  const value = event.target.value;
+  const bytes = new Uint8Array(value.buffer);
+  parseBmsData(bytes);
+}
+
+function parseBmsData(bytes) {
+  // JBD BMS basic info response (0x03) parsing
+  // This is a placeholder — exact parsing depends on firmware version
+  // Full JBD protocol: https://github.com/fl4p/batmon-ha/blob/master/bmslib/protocol/jbd
+  try {
+    if (bytes[0] === 0xDD && bytes[1] === 0x03) {
+      const soc   = bytes[23];
+      const volts = ((bytes[4] << 8) | bytes[5]) / 100;
+      const amps  = ((bytes[6] << 8) | bytes[7]) / 100;
+      const temp  = (((bytes[27] << 8) | bytes[28]) - 2731) / 10;
+      const cycles = (bytes[12] << 8) | bytes[13];
+      updateUI({ soc, voltaje:volts, corriente:amps, temp, ciclos:cycles });
+    }
+    if (bytes[0] === 0xDD && bytes[1] === 0x04) {
+      const cells = [];
+      for (let i = 0; i < 4; i++) {
+        const v = ((bytes[4 + i*2] << 8) | bytes[5 + i*2]) / 1000;
+        cells.push({ id:`C_A1_0${i+1}`, v, balancing:false, pct:95 });
+      }
+      DEMO_DATA.cells = cells;
+      renderCells();
+    }
+  } catch(e) {}
+}
+
+function onDisconnected() {
+  showConnectMsg('Dispositivo desconectado. Reconectando…');
+  btDevice.gatt.connect().then(() => {
+    hideConnectMsg();
+  }).catch(() => {
+    disconnectDevice();
+  });
+}
+
+function startDemo() {
+  demoMode = true;
+  showMainApp('MUST 12V 100Ah · DEMO', 'demo');
+  simulateData();
+  demoInterval = setInterval(simulateData, 5000);
+}
+
+function simulateData() {
+  const soc   = Math.max(5, Math.min(100, DEMO_DATA.soc + (Math.random() - 0.52) * 2));
+  const cons  = Math.max(50, Math.min(500, DEMO_DATA.consumo + (Math.random() - 0.5) * 30));
+  const temp  = parseFloat((DEMO_DATA.temp + (Math.random() - 0.5) * 0.5).toFixed(1));
+  const volt  = parseFloat((12.5 + (soc / 100) * 1.2).toFixed(2));
+  DEMO_DATA.soc      = Math.round(soc);
+  DEMO_DATA.consumo  = Math.round(cons);
+  DEMO_DATA.temp     = temp;
+  DEMO_DATA.voltaje  = volt;
+  DEMO_DATA.corriente = -(cons / volt).toFixed(1);
+  const hrs  = Math.max(0, ((soc * 1.28) / cons)).toFixed(2);
+  const h    = Math.floor(hrs); const m = Math.round((hrs - h) * 60);
+  DEMO_DATA.autonomia = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+  updateUI(DEMO_DATA);
+}
+
+// ═══════════════════════════════════════
+// UI UPDATE
+// ═══════════════════════════════════════
+function showMainApp(name, id) {
+  document.getElementById('app-connect').style.display = 'none';
+  document.getElementById('app-main').classList.remove('hidden');
+  document.getElementById('device-name').textContent = name;
+  document.getElementById('settings-device-name').textContent = name;
+  document.getElementById('settings-device-id').textContent = id || 'Bluetooth';
+  if (demoMode) document.getElementById('demo-badge').classList.remove('hidden');
+  updateUI(DEMO_DATA);
+}
+
+function updateUI(d) {
+  const soc = d.soc ?? DEMO_DATA.soc;
+  // SOC ring: circumference = 2π×100 = 628
+  const ring = document.getElementById('soc-ring');
+  if (ring) ring.style.strokeDashoffset = 628 - (628 * soc / 100);
+  set('soc-value-num', soc + '%');
+  const socEl = document.getElementById('soc-value');
+  if (socEl) socEl.innerHTML = soc + '<span class="text-headline-md font-headline-md text-on-surface-variant">%</span>';
+
+  const status = soc > 50 ? 'OK' : soc > 20 ? 'BAJO' : 'CRÍTICO';
+  const statusColor = soc > 50 ? 'text-secondary' : soc > 20 ? 'text-tertiary' : 'text-error';
+  const socStatus = document.getElementById('soc-status');
+  if (socStatus) { socStatus.textContent = d.status ?? 'DESCARGANDO'; }
+
+  set('consumo-value',   d.consumo  ? Math.round(d.consumo) : '—');
+  set('autonomia-value', d.autonomia ?? '—');
+  set('health-value',    d.health   ?? DEMO_DATA.health);
+  set('temp-value',      (d.temp    ?? DEMO_DATA.temp) + '°C');
+  set('ciclos-value',    d.ciclos   ?? DEMO_DATA.ciclos);
+  set('voltaje-value',   (d.voltaje ?? DEMO_DATA.voltaje) + 'V');
+  set('corriente-value', (d.corriente ?? DEMO_DATA.corriente) + 'A');
+  set('cell-temp',       d.temp ?? DEMO_DATA.temp);
+  set('hist-ciclos',     d.ciclos ?? DEMO_DATA.ciclos);
+  set('hist-salud',      'Salud: ' + (d.health ?? DEMO_DATA.health) + '%');
+
+  const cb = document.getElementById('consumo-bar');
+  if (cb) cb.style.width = Math.min(100, (d.consumo / 500 * 100)) + '%';
+}
+
+function set(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+function renderCells() {
+  const cells = DEMO_DATA.cells;
+  const list  = document.getElementById('cells-list');
+  if (!list) return;
+  list.innerHTML = cells.map((c, i) => `
+    <div class="cell-card rounded-xl p-4 relative overflow-hidden">
+      <div class="flex justify-between items-start mb-3">
+        <div class="flex flex-col">
+          <span class="font-label-caps text-label-caps text-on-surface-variant">CELDA 0${i+1}</span>
+          <div class="flex items-center gap-2 mt-1">
+            <span class="font-mono-data text-headline-lg text-on-surface">${c.v.toFixed(3)}V</span>
+            ${c.balancing ? '<span class="material-symbols-outlined text-secondary text-sm" style="font-variation-settings:\'FILL\' 1;">sync_alt</span>' : ''}
+          </div>
+        </div>
+        <div class="bg-surface-container-high px-2 py-1 rounded text-[10px] font-mono-data text-outline">ID: ${c.id}</div>
+      </div>
+      <div class="space-y-1.5">
+        <div class="flex justify-between text-[10px] font-label-caps text-on-surface-variant">
+          <span>BALANCEO</span>
+          <span class="${c.balancing ? 'text-secondary' : 'text-on-surface-variant'}">${c.balancing ? c.pct + '%' : 'PASIVO'}</span>
+        </div>
+        <div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
+          <div class="h-full rounded-full ${c.balancing ? 'shimmer' : 'bg-primary opacity-40'}" style="width:${c.pct}%"></div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════
+// QR SCANNER
+// ═══════════════════════════════════════
+async function startQrScan() {
+  const overlay = document.getElementById('qr-overlay');
+  const video   = document.getElementById('qr-video');
+  overlay.classList.remove('hidden');
+  try {
+    qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    video.srcObject = qrStream;
+    video.play();
+    // NOTE: Full QR decoding requires jsQR library or BarcodeDetector API
+    // For now, show the camera view. Actual decoding added once QR format is known.
+    if ('BarcodeDetector' in window) {
+      const detector = new BarcodeDetector({ formats: ['qr_code'] });
+      const scanLoop = async () => {
+        if (!qrStream) return;
+        try {
+          const codes = await detector.detect(video);
+          if (codes.length > 0) {
+            handleQrResult(codes[0].rawValue);
+            return;
+          }
+        } catch(e) {}
+        requestAnimationFrame(scanLoop);
+      };
+      requestAnimationFrame(scanLoop);
+    }
+  } catch(e) {
+    stopQrScan();
+    showConnectMsg('No se pudo acceder a la cámara.', true);
+  }
+}
+
+function stopQrScan() {
+  if (qrStream) { qrStream.getTracks().forEach(t => t.stop()); qrStream = null; }
+  document.getElementById('qr-overlay').classList.add('hidden');
+}
+
+function handleQrResult(raw) {
+  stopQrScan();
+  // QR format from MUST battery not yet confirmed
+  // Once known, parse device name/MAC and connect directly
+  showConnectMsg('QR leído: ' + raw.substring(0, 30) + '…');
+  // TODO: parse raw and call connectBluetooth() with device filter
+}
+
+// ═══════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════
+function showConnectMsg(msg, isError) {
+  const el  = document.getElementById('connect-status');
+  const txt = document.getElementById('connect-msg');
+  el.classList.remove('hidden');
+  txt.textContent = msg;
+  if (isError) txt.classList.add('text-error');
+  else         txt.classList.remove('text-error');
+}
+
+function hideConnectMsg() {
+  document.getElementById('connect-status').classList.add('hidden');
+}
+
+function disconnectDevice() {
+  if (btDevice && btDevice.gatt.connected) btDevice.gatt.disconnect();
+  if (demoInterval) clearInterval(demoInterval);
+  btDevice = null; demoMode = false; demoInterval = null;
+  document.getElementById('app-main').classList.add('hidden');
+  document.getElementById('app-connect').style.display = '';
+  hideConnectMsg();
+}
+
+function startPolling() {
+  // Periodic BMS data request for JBD protocol
+  if (!btChar) return;
+  setInterval(() => {
+    const cmd = new Uint8Array([0xDD, 0xA5, 0x03, 0x00, 0xFF, 0xFD, 0x77]);
+    btChar.writeValue(cmd).catch(() => {});
+  }, 30000);
+}
+
+function toggleAuto() {
+  autoRefresh = !autoRefresh;
+  const t = document.getElementById('toggle-auto');
+  const knob = t.querySelector('div');
+  t.classList.toggle('bg-secondary', autoRefresh);
+  t.classList.toggle('bg-surface-container-high', !autoRefresh);
+  knob.style.transform = autoRefresh ? '' : 'translateX(-24px)';
+}
+
+function toggleAlerts() {
+  alertsOn = !alertsOn;
+  const t = document.getElementById('toggle-alerts');
+  const knob = t.querySelector('div');
+  t.classList.toggle('bg-secondary', alertsOn);
+  t.classList.toggle('bg-surface-container-high', !alertsOn);
+  knob.style.transform = alertsOn ? '' : 'translateX(-24px)';
+}
+
+// ═══════════════════════════════════════
+// PWA
+// ═══════════════════════════════════════
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
